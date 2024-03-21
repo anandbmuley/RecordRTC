@@ -30,7 +30,6 @@
  */
 
 function MRecordRTC(mediaStream) {
-
     /**
      * This method attaches MediaStream object to {@link MRecordRTC}.
      * @param {MediaStream} mediaStream - A MediaStream object, either fetched using getUserMedia API, or generated using captureStreamUntilEnded or WebAudio API.
@@ -59,7 +58,7 @@ function MRecordRTC(mediaStream) {
      */
     this.mediaType = {
         audio: true,
-        video: true
+        video: true,
     };
 
     /**
@@ -75,33 +74,45 @@ function MRecordRTC(mediaStream) {
         var mimeType = this.mimeType || {
             audio: null,
             video: null,
-            gif: null
+            gif: null,
         };
 
-        if (typeof mediaType.audio !== 'function' && isMediaRecorderCompatible() && !getTracks(mediaStream, 'audio').length) {
+        if (
+            typeof mediaType.audio !== "function" &&
+            isMediaRecorderCompatible() &&
+            !getTracks(mediaStream, "audio").length
+        ) {
             mediaType.audio = false;
         }
 
-        if (typeof mediaType.video !== 'function' && isMediaRecorderCompatible() && !getTracks(mediaStream, 'video').length) {
+        if (
+            typeof mediaType.video !== "function" &&
+            isMediaRecorderCompatible() &&
+            !getTracks(mediaStream, "video").length
+        ) {
             mediaType.video = false;
         }
 
-        if (typeof mediaType.gif !== 'function' && isMediaRecorderCompatible() && !getTracks(mediaStream, 'video').length) {
+        if (
+            typeof mediaType.gif !== "function" &&
+            isMediaRecorderCompatible() &&
+            !getTracks(mediaStream, "video").length
+        ) {
             mediaType.gif = false;
         }
 
         if (!mediaType.audio && !mediaType.video && !mediaType.gif) {
-            throw 'MediaStream must have either audio or video tracks.';
+            throw "MediaStream must have either audio or video tracks.";
         }
 
         if (!!mediaType.audio) {
             recorderType = null;
-            if (typeof mediaType.audio === 'function') {
+            if (typeof mediaType.audio === "function") {
                 recorderType = mediaType.audio;
             }
 
             this.audioRecorder = new RecordRTC(mediaStream, {
-                type: 'audio',
+                type: "audio",
                 bufferSize: this.bufferSize,
                 sampleRate: this.sampleRate,
                 numberOfAudioChannels: this.numberOfAudioChannels || 2,
@@ -109,7 +120,7 @@ function MRecordRTC(mediaStream) {
                 recorderType: recorderType,
                 mimeType: mimeType.audio,
                 timeSlice: this.timeSlice,
-                onTimeStamp: this.onTimeStamp
+                onTimeStamp: this.onTimeStamp,
             });
 
             if (!mediaType.video) {
@@ -119,14 +130,18 @@ function MRecordRTC(mediaStream) {
 
         if (!!mediaType.video) {
             recorderType = null;
-            if (typeof mediaType.video === 'function') {
+            if (typeof mediaType.video === "function") {
                 recorderType = mediaType.video;
             }
 
             var newStream = mediaStream;
 
-            if (isMediaRecorderCompatible() && !!mediaType.audio && typeof mediaType.audio === 'function') {
-                var videoTrack = getTracks(mediaStream, 'video')[0];
+            if (
+                isMediaRecorderCompatible() &&
+                !!mediaType.audio &&
+                typeof mediaType.audio === "function"
+            ) {
+                var videoTrack = getTracks(mediaStream, "video")[0];
 
                 if (isFirefox) {
                     newStream = new MediaStream();
@@ -144,7 +159,7 @@ function MRecordRTC(mediaStream) {
             }
 
             this.videoRecorder = new RecordRTC(newStream, {
-                type: 'video',
+                type: "video",
                 video: this.video,
                 canvas: this.canvas,
                 frameInterval: this.frameInterval || 10,
@@ -156,7 +171,7 @@ function MRecordRTC(mediaStream) {
                 workerPath: this.workerPath,
                 webAssemblyPath: this.webAssemblyPath,
                 frameRate: this.frameRate, // used by WebAssemblyRecorder; values: usually 30; accepts any.
-                bitrate: this.bitrate // used by WebAssemblyRecorder; values: 0 to 1000+
+                bitrate: this.bitrate, // used by WebAssemblyRecorder; values: 0 to 1000+
             });
 
             if (!mediaType.audio) {
@@ -171,7 +186,11 @@ function MRecordRTC(mediaStream) {
 
             if (mediaType.audio instanceof StereoAudioRecorder && !!mediaType.video) {
                 isSingleRecorder = false;
-            } else if (mediaType.audio !== true && mediaType.video !== true && mediaType.audio !== mediaType.video) {
+            } else if (
+                mediaType.audio !== true &&
+                mediaType.video !== true &&
+                mediaType.audio !== mediaType.video
+            ) {
                 isSingleRecorder = false;
             }
 
@@ -191,16 +210,16 @@ function MRecordRTC(mediaStream) {
 
         if (!!mediaType.gif) {
             recorderType = null;
-            if (typeof mediaType.gif === 'function') {
+            if (typeof mediaType.gif === "function") {
                 recorderType = mediaType.gif;
             }
             this.gifRecorder = new RecordRTC(mediaStream, {
-                type: 'gif',
+                type: "gif",
                 frameRate: this.frameRate || 200,
                 quality: this.quality || 10,
                 disableLogs: this.disableLogs,
                 recorderType: recorderType,
-                mimeType: mimeType.gif
+                mimeType: mimeType.gif,
             });
             this.gifRecorder.startRecording();
         }
@@ -223,19 +242,19 @@ function MRecordRTC(mediaStream) {
 
         if (this.audioRecorder) {
             this.audioRecorder.stopRecording(function(blobURL) {
-                callback(blobURL, 'audio');
+                callback(blobURL, "audio");
             });
         }
 
         if (this.videoRecorder) {
             this.videoRecorder.stopRecording(function(blobURL) {
-                callback(blobURL, 'video');
+                callback(blobURL, "video");
             });
         }
 
         if (this.gifRecorder) {
             this.gifRecorder.stopRecording(function(blobURL) {
-                callback(blobURL, 'gif');
+                callback(blobURL, "gif");
             });
         }
     };
@@ -362,27 +381,27 @@ function MRecordRTC(mediaStream) {
                     getDataURL(blob.video, function(_videoDataURL) {
                         callback({
                             audio: _audioDataURL,
-                            video: _videoDataURL
+                            video: _videoDataURL,
                         });
                     });
                 });
             } else if (blob.audio) {
                 getDataURL(blob.audio, function(_audioDataURL) {
                     callback({
-                        audio: _audioDataURL
+                        audio: _audioDataURL,
                     });
                 });
             } else if (blob.video) {
                 getDataURL(blob.video, function(_videoDataURL) {
                     callback({
-                        video: _videoDataURL
+                        video: _videoDataURL,
                     });
                 });
             }
         });
 
         function getDataURL(blob, callback00) {
-            if (typeof Worker !== 'undefined') {
+            if (typeof Worker !== "undefined") {
                 var webWorker = processInWebWorker(function readFile(_blob) {
                     postMessage(new FileReaderSync().readAsDataURL(_blob));
                 });
@@ -402,20 +421,27 @@ function MRecordRTC(mediaStream) {
         }
 
         function processInWebWorker(_function) {
-            var blob = URL.createObjectURL(new Blob([_function.toString(),
-                'this.onmessage =  function (eee) {' + _function.name + '(eee.data);}'
-            ], {
-                type: 'application/javascript'
-            }));
+            var blob = URL.createObjectURL(
+                new Blob(
+                    [
+                        _function.toString(),
+                        "this.onmessage =  function (eee) {" +
+                        _function.name +
+                        "(eee.data);}",
+                    ], {
+                        type: "application/javascript",
+                    }
+                )
+            );
 
             var worker = new Worker(blob);
             var url;
-            if (typeof URL !== 'undefined') {
+            if (typeof URL !== "undefined") {
                 url = URL;
-            } else if (typeof webkitURL !== 'undefined') {
+            } else if (typeof webkitURL !== "undefined") {
                 url = webkitURL;
             } else {
-                throw 'Neither URL nor webkitURL detected.';
+                throw "Neither URL nor webkitURL detected.";
             }
             url.revokeObjectURL(blob);
             return worker;
@@ -433,7 +459,7 @@ function MRecordRTC(mediaStream) {
         RecordRTC.writeToDisk({
             audio: this.audioRecorder,
             video: this.videoRecorder,
-            gif: this.gifRecorder
+            gif: this.gifRecorder,
         });
     };
 
@@ -453,18 +479,18 @@ function MRecordRTC(mediaStream) {
         args = args || {
             audio: true,
             video: true,
-            gif: true
+            gif: true,
         };
 
         if (!!args.audio && this.audioRecorder) {
-            this.audioRecorder.save(typeof args.audio === 'string' ? args.audio : '');
+            this.audioRecorder.save(typeof args.audio === "string" ? args.audio : "");
         }
 
         if (!!args.video && this.videoRecorder) {
-            this.videoRecorder.save(typeof args.video === 'string' ? args.video : '');
+            this.videoRecorder.save(typeof args.video === "string" ? args.video : "");
         }
         if (!!args.gif && this.gifRecorder) {
-            this.gifRecorder.save(typeof args.gif === 'string' ? args.gif : '');
+            this.gifRecorder.save(typeof args.gif === "string" ? args.gif : "");
         }
     };
 }
@@ -498,6 +524,6 @@ MRecordRTC.getFromDisk = RecordRTC.getFromDisk;
  */
 MRecordRTC.writeToDisk = RecordRTC.writeToDisk;
 
-if (typeof RecordRTC !== 'undefined') {
+if (typeof RecordRTC !== "undefined") {
     RecordRTC.MRecordRTC = MRecordRTC;
 }

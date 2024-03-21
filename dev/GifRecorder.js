@@ -19,13 +19,17 @@
  */
 
 function GifRecorder(mediaStream, config) {
-    if (typeof GIFEncoder === 'undefined') {
-        throw new Error('Missing https://www.webrtc-experiment.com/gif-recorder.js');
+    if (typeof GIFEncoder === "undefined") {
+        throw new Error(
+            "Missing https://www.webrtc-experiment.com/gif-recorder.js"
+        );
     }
 
     config = config || {};
 
-    var isHTMLObject = mediaStream instanceof CanvasRenderingContext2D || mediaStream instanceof HTMLCanvasElement;
+    var isHTMLObject =
+        mediaStream instanceof CanvasRenderingContext2D ||
+        mediaStream instanceof HTMLCanvasElement;
 
     /**
      * This method records MediaStream.
@@ -35,7 +39,7 @@ function GifRecorder(mediaStream, config) {
      * recorder.record();
      */
     this.record = function() {
-        if (typeof GIFEncoder === 'undefined') {
+        if (typeof GIFEncoder === "undefined") {
             setTimeout(self.record, 1000);
             return;
         }
@@ -57,14 +61,14 @@ function GifRecorder(mediaStream, config) {
             if (!config.video) {
                 config.video = {
                     width: config.width,
-                    height: config.height
+                    height: config.height,
                 };
             }
 
             if (!config.canvas) {
                 config.canvas = {
                     width: config.width,
-                    height: config.height
+                    height: config.height,
                 };
             }
 
@@ -78,31 +82,31 @@ function GifRecorder(mediaStream, config) {
         // external library to record as GIF images
         gifEncoder = new GIFEncoder();
 
-        // void setRepeat(int iter) 
-        // Sets the number of times the set of GIF frames should be played. 
+        // void setRepeat(int iter)
+        // Sets the number of times the set of GIF frames should be played.
         // Default is 1; 0 means play indefinitely.
         gifEncoder.setRepeat(0);
 
-        // void setFrameRate(Number fps) 
-        // Sets frame rate in frames per second. 
+        // void setFrameRate(Number fps)
+        // Sets frame rate in frames per second.
         // Equivalent to setDelay(1000/fps).
         // Using "setDelay" instead of "setFrameRate"
         gifEncoder.setDelay(config.frameRate || 200);
 
-        // void setQuality(int quality) 
-        // Sets quality of color quantization (conversion of images to the 
-        // maximum 256 colors allowed by the GIF specification). 
-        // Lower values (minimum = 1) produce better colors, 
-        // but slow processing significantly. 10 is the default, 
-        // and produces good color mapping at reasonable speeds. 
+        // void setQuality(int quality)
+        // Sets quality of color quantization (conversion of images to the
+        // maximum 256 colors allowed by the GIF specification).
+        // Lower values (minimum = 1) produce better colors,
+        // but slow processing significantly. 10 is the default,
+        // and produces good color mapping at reasonable speeds.
         // Values greater than 20 do not yield significant improvements in speed.
         gifEncoder.setQuality(config.quality || 10);
 
-        // Boolean start() 
+        // Boolean start()
         // This writes the GIF Header and returns false if it fails.
         gifEncoder.start();
 
-        if (typeof config.onGifRecordingStarted === 'function') {
+        if (typeof config.onGifRecordingStarted === "function") {
             config.onGifRecordingStarted();
         }
 
@@ -141,7 +145,7 @@ function GifRecorder(mediaStream, config) {
             }
 
             if (config.onGifPreview) {
-                config.onGifPreview(canvas.toDataURL('image/png'));
+                config.onGifPreview(canvas.toDataURL("image/png"));
             }
 
             gifEncoder.addFrame(context);
@@ -183,7 +187,7 @@ function GifRecorder(mediaStream, config) {
          * });
          */
         this.blob = new Blob([new Uint8Array(gifEncoder.stream().bin)], {
-            type: 'image/gif'
+            type: "image/gif",
         });
 
         callback(this.blob);
@@ -235,20 +239,20 @@ function GifRecorder(mediaStream, config) {
     }
 
     // for debugging
-    this.name = 'GifRecorder';
+    this.name = "GifRecorder";
     this.toString = function() {
         return this.name;
     };
 
-    var canvas = document.createElement('canvas');
-    var context = canvas.getContext('2d');
+    var canvas = document.createElement("canvas");
+    var context = canvas.getContext("2d");
 
     if (isHTMLObject) {
         if (mediaStream instanceof CanvasRenderingContext2D) {
             context = mediaStream;
             canvas = context.canvas;
         } else if (mediaStream instanceof HTMLCanvasElement) {
-            context = mediaStream.getContext('2d');
+            context = mediaStream.getContext("2d");
             canvas = mediaStream;
         }
     }
@@ -256,7 +260,7 @@ function GifRecorder(mediaStream, config) {
     var isLoadedMetaData = true;
 
     if (!isHTMLObject) {
-        var video = document.createElement('video');
+        var video = document.createElement("video");
         video.muted = true;
         video.autoplay = true;
         video.playsInline = true;
@@ -279,6 +283,6 @@ function GifRecorder(mediaStream, config) {
     var self = this;
 }
 
-if (typeof RecordRTC !== 'undefined') {
+if (typeof RecordRTC !== "undefined") {
     RecordRTC.GifRecorder = GifRecorder;
 }

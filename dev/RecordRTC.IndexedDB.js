@@ -13,17 +13,21 @@
  */
 RecordRTC.getFromDisk = function(type, callback) {
     if (!callback) {
-        throw 'callback is mandatory.';
+        throw "callback is mandatory.";
     }
 
-    console.log('Getting recorded ' + (type === 'all' ? 'blobs' : type + ' blob ') + ' from disk!');
+    console.log(
+        "Getting recorded " +
+        (type === "all" ? "blobs" : type + " blob ") +
+        " from disk!"
+    );
     DiskStorage.Fetch(function(dataURL, _type) {
-        if (type !== 'all' && _type === type + 'Blob' && callback) {
+        if (type !== "all" && _type === type + "Blob" && callback) {
             callback(dataURL);
         }
 
-        if (type === 'all' && callback) {
-            callback(dataURL, _type.replace('Blob', ''));
+        if (type === "all" && callback) {
+            callback(dataURL, _type.replace("Blob", ""));
         }
     });
 };
@@ -41,7 +45,7 @@ RecordRTC.getFromDisk = function(type, callback) {
  * });
  */
 RecordRTC.writeToDisk = function(options) {
-    console.log('Writing recorded blob(s) to disk!');
+    console.log("Writing recorded blob(s) to disk!");
     options = options || {};
     if (options.audio && options.video && options.gif) {
         options.audio.getDataURL(function(audioDataURL) {
@@ -50,7 +54,7 @@ RecordRTC.writeToDisk = function(options) {
                     DiskStorage.Store({
                         audioBlob: audioDataURL,
                         videoBlob: videoDataURL,
-                        gifBlob: gifDataURL
+                        gifBlob: gifDataURL,
                     });
                 });
             });
@@ -60,7 +64,7 @@ RecordRTC.writeToDisk = function(options) {
             options.video.getDataURL(function(videoDataURL) {
                 DiskStorage.Store({
                     audioBlob: audioDataURL,
-                    videoBlob: videoDataURL
+                    videoBlob: videoDataURL,
                 });
             });
         });
@@ -69,7 +73,7 @@ RecordRTC.writeToDisk = function(options) {
             options.gif.getDataURL(function(gifDataURL) {
                 DiskStorage.Store({
                     audioBlob: audioDataURL,
-                    gifBlob: gifDataURL
+                    gifBlob: gifDataURL,
                 });
             });
         });
@@ -78,26 +82,26 @@ RecordRTC.writeToDisk = function(options) {
             options.gif.getDataURL(function(gifDataURL) {
                 DiskStorage.Store({
                     videoBlob: videoDataURL,
-                    gifBlob: gifDataURL
+                    gifBlob: gifDataURL,
                 });
             });
         });
     } else if (options.audio) {
         options.audio.getDataURL(function(audioDataURL) {
             DiskStorage.Store({
-                audioBlob: audioDataURL
+                audioBlob: audioDataURL,
             });
         });
     } else if (options.video) {
         options.video.getDataURL(function(videoDataURL) {
             DiskStorage.Store({
-                videoBlob: videoDataURL
+                videoBlob: videoDataURL,
             });
         });
     } else if (options.gif) {
         options.gif.getDataURL(function(gifDataURL) {
             DiskStorage.Store({
-                gifBlob: gifDataURL
+                gifBlob: gifDataURL,
             });
         });
     }

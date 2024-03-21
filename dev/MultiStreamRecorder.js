@@ -37,12 +37,12 @@ function MultiStreamRecorder(arrayOfMediaStreams, options) {
     var mediaRecorder;
 
     options = options || {
-        elementClass: 'multi-streams-mixer',
-        mimeType: 'video/webm',
+        elementClass: "multi-streams-mixer",
+        mimeType: "video/webm",
         video: {
             width: 360,
-            height: 240
-        }
+            height: 240,
+        },
     };
 
     if (!options.frameInterval) {
@@ -70,7 +70,10 @@ function MultiStreamRecorder(arrayOfMediaStreams, options) {
      */
     this.record = function() {
         // github/muaz-khan/MultiStreamsMixer
-        mixer = new MultiStreamsMixer(arrayOfMediaStreams, options.elementClass || 'multi-streams-mixer');
+        mixer = new MultiStreamsMixer(
+            arrayOfMediaStreams,
+            options.elementClass || "multi-streams-mixer"
+        );
 
         if (getAllVideoTracks().length) {
             mixer.frameInterval = options.frameInterval || 10;
@@ -79,7 +82,7 @@ function MultiStreamRecorder(arrayOfMediaStreams, options) {
             mixer.startDrawingFrames();
         }
 
-        if (options.previewStream && typeof options.previewStream === 'function') {
+        if (options.previewStream && typeof options.previewStream === "function") {
             options.previewStream(mixer.getMixedStream());
         }
 
@@ -91,7 +94,7 @@ function MultiStreamRecorder(arrayOfMediaStreams, options) {
     function getAllVideoTracks() {
         var tracks = [];
         arrayOfMediaStreams.forEach(function(stream) {
-            getTracks(stream, 'video').forEach(function(track) {
+            getTracks(stream, "video").forEach(function(track) {
                 tracks.push(track);
             });
         });
@@ -177,7 +180,7 @@ function MultiStreamRecorder(arrayOfMediaStreams, options) {
      */
     this.addStreams = function(streams) {
         if (!streams) {
-            throw 'First parameter is required.';
+            throw "First parameter is required.";
         }
 
         if (!(streams instanceof Array)) {
@@ -192,7 +195,7 @@ function MultiStreamRecorder(arrayOfMediaStreams, options) {
 
         mixer.appendStreams(streams);
 
-        if (options.previewStream && typeof options.previewStream === 'function') {
+        if (options.previewStream && typeof options.previewStream === "function") {
             options.previewStream(mixer.getMixedStream());
         }
     };
@@ -230,12 +233,12 @@ function MultiStreamRecorder(arrayOfMediaStreams, options) {
     };
 
     // for debugging
-    this.name = 'MultiStreamRecorder';
+    this.name = "MultiStreamRecorder";
     this.toString = function() {
         return this.name;
     };
 }
 
-if (typeof RecordRTC !== 'undefined') {
+if (typeof RecordRTC !== "undefined") {
     RecordRTC.MultiStreamRecorder = MultiStreamRecorder;
 }

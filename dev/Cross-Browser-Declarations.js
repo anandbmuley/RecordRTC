@@ -5,17 +5,17 @@
 
 /*jshint -W079 */
 var requestAnimationFrame = window.requestAnimationFrame;
-if (typeof requestAnimationFrame === 'undefined') {
-    if (typeof webkitRequestAnimationFrame !== 'undefined') {
+if (typeof requestAnimationFrame === "undefined") {
+    if (typeof webkitRequestAnimationFrame !== "undefined") {
         /*global requestAnimationFrame:true */
         requestAnimationFrame = webkitRequestAnimationFrame;
-    } else if (typeof mozRequestAnimationFrame !== 'undefined') {
+    } else if (typeof mozRequestAnimationFrame !== "undefined") {
         /*global requestAnimationFrame:true */
         requestAnimationFrame = mozRequestAnimationFrame;
-    } else if (typeof msRequestAnimationFrame !== 'undefined') {
+    } else if (typeof msRequestAnimationFrame !== "undefined") {
         /*global requestAnimationFrame:true */
         requestAnimationFrame = msRequestAnimationFrame;
-    } else if (typeof requestAnimationFrame === 'undefined') {
+    } else if (typeof requestAnimationFrame === "undefined") {
         // via: https://gist.github.com/paulirish/1579671
         var lastTime = 0;
 
@@ -34,17 +34,17 @@ if (typeof requestAnimationFrame === 'undefined') {
 
 /*jshint -W079 */
 var cancelAnimationFrame = window.cancelAnimationFrame;
-if (typeof cancelAnimationFrame === 'undefined') {
-    if (typeof webkitCancelAnimationFrame !== 'undefined') {
+if (typeof cancelAnimationFrame === "undefined") {
+    if (typeof webkitCancelAnimationFrame !== "undefined") {
         /*global cancelAnimationFrame:true */
         cancelAnimationFrame = webkitCancelAnimationFrame;
-    } else if (typeof mozCancelAnimationFrame !== 'undefined') {
+    } else if (typeof mozCancelAnimationFrame !== "undefined") {
         /*global cancelAnimationFrame:true */
         cancelAnimationFrame = mozCancelAnimationFrame;
-    } else if (typeof msCancelAnimationFrame !== 'undefined') {
+    } else if (typeof msCancelAnimationFrame !== "undefined") {
         /*global cancelAnimationFrame:true */
         cancelAnimationFrame = msCancelAnimationFrame;
-    } else if (typeof cancelAnimationFrame === 'undefined') {
+    } else if (typeof cancelAnimationFrame === "undefined") {
         /*global cancelAnimationFrame:true */
         cancelAnimationFrame = function(id) {
             clearTimeout(id);
@@ -55,13 +55,13 @@ if (typeof cancelAnimationFrame === 'undefined') {
 // WebAudio API representer
 var AudioContext = window.AudioContext;
 
-if (typeof AudioContext === 'undefined') {
-    if (typeof webkitAudioContext !== 'undefined') {
+if (typeof AudioContext === "undefined") {
+    if (typeof webkitAudioContext !== "undefined") {
         /*global AudioContext:true */
         AudioContext = webkitAudioContext;
     }
 
-    if (typeof mozAudioContext !== 'undefined') {
+    if (typeof mozAudioContext !== "undefined") {
         /*global AudioContext:true */
         AudioContext = mozAudioContext;
     }
@@ -70,43 +70,58 @@ if (typeof AudioContext === 'undefined') {
 /*jshint -W079 */
 var URL = window.URL;
 
-if (typeof URL === 'undefined' && typeof webkitURL !== 'undefined') {
+if (typeof URL === "undefined" && typeof webkitURL !== "undefined") {
     /*global URL:true */
     URL = webkitURL;
 }
 
-if (typeof navigator !== 'undefined' && typeof navigator.getUserMedia === 'undefined') { // maybe window.navigator?
-    if (typeof navigator.webkitGetUserMedia !== 'undefined') {
+if (
+    typeof navigator !== "undefined" &&
+    typeof navigator.getUserMedia === "undefined"
+) {
+    // maybe window.navigator?
+    if (typeof navigator.webkitGetUserMedia !== "undefined") {
         navigator.getUserMedia = navigator.webkitGetUserMedia;
     }
 
-    if (typeof navigator.mozGetUserMedia !== 'undefined') {
+    if (typeof navigator.mozGetUserMedia !== "undefined") {
         navigator.getUserMedia = navigator.mozGetUserMedia;
     }
 }
 
-var isEdge = navigator.userAgent.indexOf('Edge') !== -1 && (!!navigator.msSaveBlob || !!navigator.msSaveOrOpenBlob);
-var isOpera = !!window.opera || navigator.userAgent.indexOf('OPR/') !== -1;
-var isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1 && ('netscape' in window) && / rv:/.test(navigator.userAgent);
-var isChrome = (!isOpera && !isEdge && !!navigator.webkitGetUserMedia) || isElectron() || navigator.userAgent.toLowerCase().indexOf('chrome/') !== -1;
+var isEdge =
+    navigator.userAgent.indexOf("Edge") !== -1 &&
+    (!!navigator.msSaveBlob || !!navigator.msSaveOrOpenBlob);
+var isOpera = !!window.opera || navigator.userAgent.indexOf("OPR/") !== -1;
+var isFirefox =
+    navigator.userAgent.toLowerCase().indexOf("firefox") > -1 &&
+    "netscape" in window &&
+    / rv:/.test(navigator.userAgent);
+var isChrome =
+    (!isOpera && !isEdge && !!navigator.webkitGetUserMedia) ||
+    isElectron() ||
+    navigator.userAgent.toLowerCase().indexOf("chrome/") !== -1;
 
 var isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
 
-if (isSafari && !isChrome && navigator.userAgent.indexOf('CriOS') !== -1) {
+if (isSafari && !isChrome && navigator.userAgent.indexOf("CriOS") !== -1) {
     isSafari = false;
     isChrome = true;
 }
 
 var MediaStream = window.MediaStream;
 
-if (typeof MediaStream === 'undefined' && typeof webkitMediaStream !== 'undefined') {
+if (
+    typeof MediaStream === "undefined" &&
+    typeof webkitMediaStream !== "undefined"
+) {
     MediaStream = webkitMediaStream;
 }
 
 /*global MediaStream:true */
-if (typeof MediaStream !== 'undefined') {
+if (typeof MediaStream !== "undefined") {
     // override "stop" method for all browsers
-    if (typeof MediaStream.prototype.stop === 'undefined') {
+    if (typeof MediaStream.prototype.stop === "undefined") {
         MediaStream.prototype.stop = function() {
             this.getTracks().forEach(function(track) {
                 track.stop();
@@ -126,12 +141,12 @@ if (typeof MediaStream !== 'undefined') {
  */
 function bytesToSize(bytes) {
     var k = 1000;
-    var sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+    var sizes = ["Bytes", "KB", "MB", "GB", "TB"];
     if (bytes === 0) {
-        return '0 Bytes';
+        return "0 Bytes";
     }
     var i = parseInt(Math.floor(Math.log(bytes) / Math.log(k)), 10);
-    return (bytes / Math.pow(k, i)).toPrecision(3) + ' ' + sizes[i];
+    return (bytes / Math.pow(k, i)).toPrecision(3) + " " + sizes[i];
 }
 
 /**
@@ -143,50 +158,55 @@ function bytesToSize(bytes) {
  */
 function invokeSaveAsDialog(file, fileName) {
     if (!file) {
-        throw 'Blob object is required.';
+        throw "Blob object is required.";
     }
 
     if (!file.type) {
         try {
-            file.type = 'video/webm';
+            file.type = "video/webm";
         } catch (e) {}
     }
 
-    var fileExtension = (file.type || 'video/webm').split('/')[1];
-    if (fileExtension.indexOf(';') !== -1) {
+    var fileExtension = (file.type || "video/webm").split("/")[1];
+    if (fileExtension.indexOf(";") !== -1) {
         // extended mimetype, e.g. 'video/webm;codecs=vp8,opus'
-        fileExtension = fileExtension.split(';')[0];
+        fileExtension = fileExtension.split(";")[0];
     }
-    if (fileName && fileName.indexOf('.') !== -1) {
-        var splitted = fileName.split('.');
+    if (fileName && fileName.indexOf(".") !== -1) {
+        var splitted = fileName.split(".");
         fileName = splitted[0];
         fileExtension = splitted[1];
     }
 
-    var fileFullName = (fileName || (Math.round(Math.random() * 9999999999) + 888888888)) + '.' + fileExtension;
+    var fileFullName =
+        (fileName || Math.round(Math.random() * 9999999999) + 888888888) +
+        "." +
+        fileExtension;
 
-    if (typeof navigator.msSaveOrOpenBlob !== 'undefined') {
+    if (typeof navigator.msSaveOrOpenBlob !== "undefined") {
         return navigator.msSaveOrOpenBlob(file, fileFullName);
-    } else if (typeof navigator.msSaveBlob !== 'undefined') {
+    } else if (typeof navigator.msSaveBlob !== "undefined") {
         return navigator.msSaveBlob(file, fileFullName);
     }
 
-    var hyperlink = document.createElement('a');
+    var hyperlink = document.createElement("a");
     hyperlink.href = URL.createObjectURL(file);
     hyperlink.download = fileFullName;
 
-    hyperlink.style = 'display:none;opacity:0;color:transparent;';
+    hyperlink.style = "display:none;opacity:0;color:transparent;";
     (document.body || document.documentElement).appendChild(hyperlink);
 
-    if (typeof hyperlink.click === 'function') {
+    if (typeof hyperlink.click === "function") {
         hyperlink.click();
     } else {
-        hyperlink.target = '_blank';
-        hyperlink.dispatchEvent(new MouseEvent('click', {
-            view: window,
-            bubbles: true,
-            cancelable: true
-        }));
+        hyperlink.target = "_blank";
+        hyperlink.dispatchEvent(
+            new MouseEvent("click", {
+                view: window,
+                bubbles: true,
+                cancelable: true,
+            })
+        );
     }
 
     URL.revokeObjectURL(hyperlink.href);
@@ -197,17 +217,29 @@ function invokeSaveAsDialog(file, fileName) {
  **/
 function isElectron() {
     // Renderer process
-    if (typeof window !== 'undefined' && typeof window.process === 'object' && window.process.type === 'renderer') {
+    if (
+        typeof window !== "undefined" &&
+        typeof window.process === "object" &&
+        window.process.type === "renderer"
+    ) {
         return true;
     }
 
     // Main process
-    if (typeof process !== 'undefined' && typeof process.versions === 'object' && !!process.versions.electron) {
+    if (
+        typeof process !== "undefined" &&
+        typeof process.versions === "object" &&
+        !!process.versions.electron
+    ) {
         return true;
     }
 
     // Detect the user agent when the `nodeIntegration` option is set to true
-    if (typeof navigator === 'object' && typeof navigator.userAgent === 'string' && navigator.userAgent.indexOf('Electron') >= 0) {
+    if (
+        typeof navigator === "object" &&
+        typeof navigator.userAgent === "string" &&
+        navigator.userAgent.indexOf("Electron") >= 0
+    ) {
         return true;
     }
 
@@ -220,14 +252,14 @@ function getTracks(stream, kind) {
     }
 
     return stream.getTracks().filter(function(t) {
-        return t.kind === (kind || 'audio');
+        return t.kind === (kind || "audio");
     });
 }
 
 function setSrcObject(stream, element) {
-    if ('srcObject' in element) {
+    if ("srcObject" in element) {
         element.srcObject = stream;
-    } else if ('mozSrcObject' in element) {
+    } else if ("mozSrcObject" in element) {
         element.mozSrcObject = stream;
     } else {
         element.srcObject = stream;
@@ -243,8 +275,8 @@ function setSrcObject(stream, element) {
  */
 function getSeekableBlob(inputBlob, callback) {
     // EBML.js copyrights goes to: https://github.com/legokichi/ts-ebml
-    if (typeof EBML === 'undefined') {
-        throw new Error('Please link: https://www.webrtc-experiment.com/EBML.js');
+    if (typeof EBML === "undefined") {
+        throw new Error("Please link: https://www.webrtc-experiment.com/EBML.js");
     }
 
     var reader = new EBML.Reader();
@@ -258,10 +290,14 @@ function getSeekableBlob(inputBlob, callback) {
             reader.read(element);
         });
         reader.stop();
-        var refinedMetadataBuf = tools.makeMetadataSeekable(reader.metadatas, reader.duration, reader.cues);
+        var refinedMetadataBuf = tools.makeMetadataSeekable(
+            reader.metadatas,
+            reader.duration,
+            reader.cues
+        );
         var body = this.result.slice(reader.metadataSize);
         var newBlob = new Blob([refinedMetadataBuf, body], {
-            type: 'video/webm'
+            type: "video/webm",
         });
 
         callback(newBlob);
@@ -269,7 +305,7 @@ function getSeekableBlob(inputBlob, callback) {
     fileReader.readAsArrayBuffer(inputBlob);
 }
 
-if (typeof RecordRTC !== 'undefined') {
+if (typeof RecordRTC !== "undefined") {
     RecordRTC.invokeSaveAsDialog = invokeSaveAsDialog;
     RecordRTC.getTracks = getTracks;
     RecordRTC.getSeekableBlob = getSeekableBlob;

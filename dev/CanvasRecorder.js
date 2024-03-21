@@ -20,8 +20,8 @@
  */
 
 function CanvasRecorder(htmlElement, config) {
-    if (typeof html2canvas === 'undefined') {
-        throw 'Please link: https://www.webrtc-experiment.com/screenshot.js';
+    if (typeof html2canvas === "undefined") {
+        throw "Please link: https://www.webrtc-experiment.com/screenshot.js";
     }
 
     config = config || {};
@@ -31,13 +31,17 @@ function CanvasRecorder(htmlElement, config) {
 
     // via DetectRTC.js
     var isCanvasSupportsStreamCapturing = false;
-    ['captureStream', 'mozCaptureStream', 'webkitCaptureStream'].forEach(function(item) {
-        if (item in document.createElement('canvas')) {
-            isCanvasSupportsStreamCapturing = true;
+    ["captureStream", "mozCaptureStream", "webkitCaptureStream"].forEach(
+        function(item) {
+            if (item in document.createElement("canvas")) {
+                isCanvasSupportsStreamCapturing = true;
+            }
         }
-    });
+    );
 
-    var _isChrome = (!!window.webkitRTCPeerConnection || !!window.webkitGetUserMedia) && !!window.chrome;
+    var _isChrome =
+        (!!window.webkitRTCPeerConnection || !!window.webkitGetUserMedia) &&
+        !!window.chrome;
 
     var chromeVersion = 50;
     var matchArray = navigator.userAgent.match(/Chrom(e|ium)\/([0-9]+)\./);
@@ -57,7 +61,9 @@ function CanvasRecorder(htmlElement, config) {
 
     if (isCanvasSupportsStreamCapturing) {
         if (!config.disableLogs) {
-            console.log('Your browser supports both MediRecorder API and canvas.captureStream!');
+            console.log(
+                "Your browser supports both MediRecorder API and canvas.captureStream!"
+            );
         }
 
         if (htmlElement instanceof HTMLCanvasElement) {
@@ -65,11 +71,11 @@ function CanvasRecorder(htmlElement, config) {
         } else if (htmlElement instanceof CanvasRenderingContext2D) {
             globalCanvas = htmlElement.canvas;
         } else {
-            throw 'Please pass either HTMLCanvasElement or CanvasRenderingContext2D.';
+            throw "Please pass either HTMLCanvasElement or CanvasRenderingContext2D.";
         }
     } else if (!!navigator.mozGetUserMedia) {
         if (!config.disableLogs) {
-            console.error('Canvas recording is NOT supported in Firefox.');
+            console.error("Canvas recording is NOT supported in Firefox.");
         }
     }
 
@@ -88,28 +94,28 @@ function CanvasRecorder(htmlElement, config) {
         if (isCanvasSupportsStreamCapturing && !config.useWhammyRecorder) {
             // CanvasCaptureMediaStream
             var canvasMediaStream;
-            if ('captureStream' in globalCanvas) {
+            if ("captureStream" in globalCanvas) {
                 canvasMediaStream = globalCanvas.captureStream(25); // 25 FPS
-            } else if ('mozCaptureStream' in globalCanvas) {
+            } else if ("mozCaptureStream" in globalCanvas) {
                 canvasMediaStream = globalCanvas.mozCaptureStream(25);
-            } else if ('webkitCaptureStream' in globalCanvas) {
+            } else if ("webkitCaptureStream" in globalCanvas) {
                 canvasMediaStream = globalCanvas.webkitCaptureStream(25);
             }
 
             try {
                 var mdStream = new MediaStream();
-                mdStream.addTrack(getTracks(canvasMediaStream, 'video')[0]);
+                mdStream.addTrack(getTracks(canvasMediaStream, "video")[0]);
                 canvasMediaStream = mdStream;
             } catch (e) {}
 
             if (!canvasMediaStream) {
-                throw 'captureStream API are NOT available.';
+                throw "captureStream API are NOT available.";
             }
 
-            // Note: Jan 18, 2016 status is that, 
+            // Note: Jan 18, 2016 status is that,
             // Firefox MediaRecorder API can't record CanvasCaptureMediaStream object.
             mediaStreamRecorder = new MediaStreamRecorder(canvasMediaStream, {
-                mimeType: config.mimeType || 'video/webm'
+                mimeType: config.mimeType || "video/webm",
             });
             mediaStreamRecorder.record();
         } else {
@@ -124,7 +130,7 @@ function CanvasRecorder(htmlElement, config) {
     };
 
     this.getWebPImages = function(callback) {
-        if (htmlElement.nodeName.toLowerCase() !== 'canvas') {
+        if (htmlElement.nodeName.toLowerCase() !== "canvas") {
             callback();
             return;
         }
@@ -133,19 +139,19 @@ function CanvasRecorder(htmlElement, config) {
         whammy.frames.forEach(function(frame, idx) {
             var framesRemaining = framesLength - idx;
             if (!config.disableLogs) {
-                console.log(framesRemaining + '/' + framesLength + ' frames remaining');
+                console.log(framesRemaining + "/" + framesLength + " frames remaining");
             }
 
             if (config.onEncodingCallback) {
                 config.onEncodingCallback(framesRemaining, framesLength);
             }
 
-            var webp = frame.image.toDataURL('image/webp', 1);
+            var webp = frame.image.toDataURL("image/webp", 1);
             whammy.frames[idx].image = webp;
         });
 
         if (!config.disableLogs) {
-            console.log('Generating WebM');
+            console.log("Generating WebM");
         }
 
         callback();
@@ -182,14 +188,14 @@ function CanvasRecorder(htmlElement, config) {
              */
             whammy.compile(function(blob) {
                 if (!config.disableLogs) {
-                    console.log('Recording finished!');
+                    console.log("Recording finished!");
                 }
 
                 that.blob = blob;
 
                 if (that.blob.forEach) {
                     that.blob = new Blob([], {
-                        type: 'video/webm'
+                        type: "video/webm",
                     });
                 }
 
@@ -261,15 +267,15 @@ function CanvasRecorder(htmlElement, config) {
     }
 
     // for debugging
-    this.name = 'CanvasRecorder';
+    this.name = "CanvasRecorder";
     this.toString = function() {
         return this.name;
     };
 
     function cloneCanvas() {
         //create a new canvas
-        var newCanvas = document.createElement('canvas');
-        var context = newCanvas.getContext('2d');
+        var newCanvas = document.createElement("canvas");
+        var context = newCanvas.getContext("2d");
 
         //set dimensions
         newCanvas.width = htmlElement.width;
@@ -288,14 +294,14 @@ function CanvasRecorder(htmlElement, config) {
             return setTimeout(drawCanvasFrame, 500);
         }
 
-        if (htmlElement.nodeName.toLowerCase() === 'canvas') {
+        if (htmlElement.nodeName.toLowerCase() === "canvas") {
             var duration = new Date().getTime() - lastTime;
             // via #206, by Jack i.e. @Seymourr
             lastTime = new Date().getTime();
 
             whammy.frames.push({
                 image: cloneCanvas(),
-                duration: duration
+                duration: duration,
             });
 
             if (isRecording) {
@@ -305,7 +311,8 @@ function CanvasRecorder(htmlElement, config) {
         }
 
         html2canvas(htmlElement, {
-            grabMouse: typeof config.showMousePointer === 'undefined' || config.showMousePointer,
+            grabMouse: typeof config.showMousePointer === "undefined" ||
+                config.showMousePointer,
             onrendered: function(canvas) {
                 var duration = new Date().getTime() - lastTime;
                 if (!duration) {
@@ -316,14 +323,14 @@ function CanvasRecorder(htmlElement, config) {
                 lastTime = new Date().getTime();
 
                 whammy.frames.push({
-                    image: canvas.toDataURL('image/webp', 1),
-                    duration: duration
+                    image: canvas.toDataURL("image/webp", 1),
+                    duration: duration,
                 });
 
                 if (isRecording) {
                     setTimeout(drawCanvasFrame, config.frameInterval);
                 }
-            }
+            },
         });
     }
 
@@ -332,6 +339,6 @@ function CanvasRecorder(htmlElement, config) {
     var whammy = new Whammy.Video(100);
 }
 
-if (typeof RecordRTC !== 'undefined') {
+if (typeof RecordRTC !== "undefined") {
     RecordRTC.CanvasRecorder = CanvasRecorder;
 }

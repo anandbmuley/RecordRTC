@@ -1,9 +1,9 @@
-'use strict';
+"use strict";
 
-// Last time updated: 2024-01-03 12:51:19 PM UTC
+// Last time updated: 2024-03-21 7:19:03 AM UTC
 
 // ________________
-// RecordRTC v5.6.3
+// RecordRTC v5.6.4
 
 // Open-Sourced: https://github.com/muaz-khan/RecordRTC
 
@@ -16,7 +16,7 @@
 // RecordRTC.js
 
 /**
- * {@link https://github.com/muaz-khan/RecordRTC|RecordRTC} is a WebRTC JavaScript library for audio/video as well as screen activity recording. It supports Chrome, Firefox, Opera, Android, and Microsoft Edge. Platforms: Linux, Mac and Windows. 
+ * {@link https://github.com/muaz-khan/RecordRTC|RecordRTC} is a WebRTC JavaScript library for audio/video as well as screen activity recording. It supports Chrome, Firefox, Opera, Android, and Microsoft Edge. Platforms: Linux, Mac and Windows.
  * @summary Record audio, video or screen inside the browser.
  * @license {@link https://github.com/muaz-khan/RecordRTC/blob/master/LICENSE|MIT}
  * @author {@link https://MuazKhan.com|Muaz Khan}
@@ -35,12 +35,13 @@
  */
 
 function RecordRTC(mediaStream, config) {
+    var indexDBClient = new IndexDBClient(config.filename);
     if (!mediaStream) {
-        throw 'First parameter is required.';
+        throw "First parameter is required.";
     }
 
     config = config || {
-        type: 'video'
+        type: "video",
     };
 
     config = new RecordRTCConfiguration(mediaStream, config);
@@ -49,8 +50,9 @@ function RecordRTC(mediaStream, config) {
     var self = this;
 
     function startRecording(config2) {
+        indexDBClient.initialize();
         if (!config.disableLogs) {
-            console.log('RecordRTC version: ', self.version);
+            console.log("RecordRTC version: ", self.version);
         }
 
         if (!!config2) {
@@ -60,14 +62,14 @@ function RecordRTC(mediaStream, config) {
         }
 
         if (!config.disableLogs) {
-            console.log('started recording ' + config.type + ' stream.');
+            console.log("started recording " + config.type + " stream.");
         }
 
         if (mediaRecorder) {
             mediaRecorder.clearRecordedData();
             mediaRecorder.record();
 
-            setState('recording');
+            setState("recording");
 
             if (self.recordingDuration) {
                 handleRecordingDuration();
@@ -94,13 +96,18 @@ function RecordRTC(mediaStream, config) {
 
         var Recorder = new GetRecorderType(mediaStream, config);
 
-        mediaRecorder = new Recorder(mediaStream, config);
+        mediaRecorder = new Recorder(mediaStream, config, indexDBClient);
         mediaRecorder.record();
 
-        setState('recording');
+        setState("recording");
 
         if (!config.disableLogs) {
-            console.log('Initialized recorderType:', mediaRecorder.constructor.name, 'for output-type:', config.type);
+            console.log(
+                "Initialized recorderType:",
+                mediaRecorder.constructor.name,
+                "for output-type:",
+                config.type
+            );
         }
     }
 
@@ -112,7 +119,7 @@ function RecordRTC(mediaStream, config) {
             return;
         }
 
-        if (self.state === 'paused') {
+        if (self.state === "paused") {
             self.resumeRecording();
 
             setTimeout(function() {
@@ -121,35 +128,38 @@ function RecordRTC(mediaStream, config) {
             return;
         }
 
-        if (self.state !== 'recording' && !config.disableLogs) {
-            console.warn('Recording state should be: "recording", however current state is: ', self.state);
+        if (self.state !== "recording" && !config.disableLogs) {
+            console.warn(
+                "Recording state should be: 'recording', however current state is: ",
+                self.state
+            );
         }
 
         if (!config.disableLogs) {
-            console.log('Stopped recording ' + config.type + ' stream.');
+            console.log("Stopped recording " + config.type + " stream.");
         }
 
-        if (config.type !== 'gif') {
+        if (config.type !== "gif") {
             mediaRecorder.stop(_callback);
         } else {
             mediaRecorder.stop();
             _callback();
         }
 
-        setState('stopped');
+        setState("stopped");
 
         function _callback(__blob) {
             if (!mediaRecorder) {
-                if (typeof callback.call === 'function') {
-                    callback.call(self, '');
+                if (typeof callback.call === "function") {
+                    callback.call(self, "");
                 } else {
-                    callback('');
+                    callback("");
                 }
                 return;
             }
 
             Object.keys(mediaRecorder).forEach(function(key) {
-                if (typeof mediaRecorder[key] === 'function') {
+                if (typeof mediaRecorder[key] === "function") {
                     return;
                 }
 
@@ -162,12 +172,12 @@ function RecordRTC(mediaStream, config) {
                 if (__blob) {
                     mediaRecorder.blob = blob = __blob;
                 } else {
-                    throw 'Recording failed.';
+                    throw "Recording failed.";
                 }
             }
 
             if (blob && !config.disableLogs) {
-                console.log(blob.type, '->', bytesToSize(blob.size));
+                console.log(blob.type, "->", bytesToSize(blob.size));
             }
 
             if (callback) {
@@ -177,7 +187,7 @@ function RecordRTC(mediaStream, config) {
                     url = URL.createObjectURL(blob);
                 } catch (e) {}
 
-                if (typeof callback.call === 'function') {
+                if (typeof callback.call === "function") {
                     callback.call(self, url);
                 } else {
                     callback(url);
@@ -190,7 +200,7 @@ function RecordRTC(mediaStream, config) {
 
             getDataURL(function(dataURL) {
                 var parameter = {};
-                parameter[config.type + 'Blob'] = dataURL;
+                parameter[config.type + "Blob"] = dataURL;
                 DiskStorage.Store(parameter);
             });
         }
@@ -202,19 +212,22 @@ function RecordRTC(mediaStream, config) {
             return;
         }
 
-        if (self.state !== 'recording') {
+        if (self.state !== "recording") {
             if (!config.disableLogs) {
-                console.warn('Unable to pause the recording. Recording state: ', self.state);
+                console.warn(
+                    "Unable to pause the recording. Recording state: ",
+                    self.state
+                );
             }
             return;
         }
 
-        setState('paused');
+        setState("paused");
 
         mediaRecorder.pause();
 
         if (!config.disableLogs) {
-            console.log('Paused recording.');
+            console.log("Paused recording.");
         }
     }
 
@@ -224,20 +237,23 @@ function RecordRTC(mediaStream, config) {
             return;
         }
 
-        if (self.state !== 'paused') {
+        if (self.state !== "paused") {
             if (!config.disableLogs) {
-                console.warn('Unable to resume the recording. Recording state: ', self.state);
+                console.warn(
+                    "Unable to resume the recording. Recording state: ",
+                    self.state
+                );
             }
             return;
         }
 
-        setState('recording');
+        setState("recording");
 
         // not all libs have this method yet
         mediaRecorder.resume();
 
         if (!config.disableLogs) {
-            console.log('Resumed recording.');
+            console.log("Resumed recording.");
         }
     }
 
@@ -247,14 +263,16 @@ function RecordRTC(mediaStream, config) {
 
     function getDataURL(callback, _mediaRecorder) {
         if (!callback) {
-            throw 'Pass a callback function over getDataURL.';
+            throw "Pass a callback function over getDataURL.";
         }
 
-        var blob = _mediaRecorder ? _mediaRecorder.blob : (mediaRecorder || {}).blob;
+        var blob = _mediaRecorder ?
+            _mediaRecorder.blob :
+            (mediaRecorder || {}).blob;
 
         if (!blob) {
             if (!config.disableLogs) {
-                console.warn('Blob encoder did not finish its job yet.');
+                console.warn("Blob encoder did not finish its job yet.");
             }
 
             setTimeout(function() {
@@ -263,7 +281,7 @@ function RecordRTC(mediaStream, config) {
             return;
         }
 
-        if (typeof Worker !== 'undefined' && !navigator.mozGetUserMedia) {
+        if (typeof Worker !== "undefined" && !navigator.mozGetUserMedia) {
             var webWorker = processInWebWorker(readFile);
 
             webWorker.onmessage = function(event) {
@@ -281,11 +299,18 @@ function RecordRTC(mediaStream, config) {
 
         function processInWebWorker(_function) {
             try {
-                var blob = URL.createObjectURL(new Blob([_function.toString(),
-                    'this.onmessage =  function (eee) {' + _function.name + '(eee.data);}'
-                ], {
-                    type: 'application/javascript'
-                }));
+                var blob = URL.createObjectURL(
+                    new Blob(
+                        [
+                            _function.toString(),
+                            "this.onmessage =  function (eee) {" +
+                            _function.name +
+                            "(eee.data);}",
+                        ], {
+                            type: "application/javascript",
+                        }
+                    )
+                );
 
                 var worker = new Worker(blob);
                 URL.revokeObjectURL(blob);
@@ -297,14 +322,14 @@ function RecordRTC(mediaStream, config) {
     function handleRecordingDuration(counter) {
         counter = counter || 0;
 
-        if (self.state === 'paused') {
+        if (self.state === "paused") {
             setTimeout(function() {
                 handleRecordingDuration(counter);
             }, 1000);
             return;
         }
 
-        if (self.state === 'stopped') {
+        if (self.state === "stopped") {
             return;
         }
 
@@ -327,14 +352,17 @@ function RecordRTC(mediaStream, config) {
 
         self.state = state;
 
-        if (typeof self.onStateChanged.call === 'function') {
+        if (typeof self.onStateChanged.call === "function") {
             self.onStateChanged.call(self, state);
         } else {
             self.onStateChanged(state);
         }
     }
 
-    var WARNING = 'It seems that recorder is destroyed or "startRecording" is not invoked for ' + config.type + ' recorder.';
+    var WARNING =
+        "It seems that recorder is destroyed or 'startRecording' is not invoked for " +
+        config.type +
+        " recorder.";
 
     function warningLog() {
         if (config.disableLogs === true) {
@@ -420,7 +448,7 @@ function RecordRTC(mediaStream, config) {
          *    var blob = this.getBlob();
          *    video.src = this.toURL();
          * });
-         * 
+         *
          * // or otherwise
          * recorder.setRecordingDuration(fiveMinutes).onRecordingStopped(function() {
          *    var blob = this.getBlob();
@@ -428,12 +456,12 @@ function RecordRTC(mediaStream, config) {
          * });
          */
         setRecordingDuration: function(recordingDuration, callback) {
-            if (typeof recordingDuration === 'undefined') {
-                throw 'recordingDuration is required.';
+            if (typeof recordingDuration === "undefined") {
+                throw "recordingDuration is required.";
             }
 
-            if (typeof recordingDuration !== 'number') {
-                throw 'recordingDuration must be a number.';
+            if (typeof recordingDuration !== "number") {
+                throw "recordingDuration must be a number.";
             }
 
             self.recordingDuration = recordingDuration;
@@ -442,7 +470,7 @@ function RecordRTC(mediaStream, config) {
             return {
                 onRecordingStopped: function(callback) {
                     self.onRecordingStopped = callback;
-                }
+                },
             };
         },
 
@@ -464,7 +492,7 @@ function RecordRTC(mediaStream, config) {
             mediaRecorder.clearRecordedData();
 
             if (!config.disableLogs) {
-                console.log('Cleared old recorded data.');
+                console.log("Cleared old recorded data.");
             }
         },
 
@@ -614,7 +642,7 @@ function RecordRTC(mediaStream, config) {
             for (var i = 0; i < length; i++) {
                 config.advertisement.push({
                     duration: i,
-                    image: arrayOfWebPImages[i]
+                    image: arrayOfWebPImages[i],
                 });
             }
         },
@@ -685,15 +713,18 @@ function RecordRTC(mediaStream, config) {
          * recorder.startRecording();
          */
         reset: function() {
-            if (self.state === 'recording' && !config.disableLogs) {
-                console.warn('Stop an active recorder.');
+            if (self.state === "recording" && !config.disableLogs) {
+                console.warn("Stop an active recorder.");
             }
 
-            if (mediaRecorder && typeof mediaRecorder.clearRecordedData === 'function') {
+            if (
+                mediaRecorder &&
+                typeof mediaRecorder.clearRecordedData === "function"
+            ) {
                 mediaRecorder.clearRecordedData();
             }
             mediaRecorder = null;
-            setState('inactive');
+            setState("inactive");
             self.blob = null;
         },
 
@@ -710,7 +741,7 @@ function RecordRTC(mediaStream, config) {
          */
         onStateChanged: function(state) {
             if (!config.disableLogs) {
-                console.log('Recorder state changed:', state);
+                console.log("Recorder state changed:", state);
             }
         },
 
@@ -729,7 +760,7 @@ function RecordRTC(mediaStream, config) {
          * })();
          * recorder.startRecording();
          */
-        state: 'inactive',
+        state: "inactive",
 
         /**
          * Get recorder's readonly state.
@@ -754,10 +785,10 @@ function RecordRTC(mediaStream, config) {
             var disableLogsCache = config.disableLogs;
 
             config = {
-                disableLogs: true
+                disableLogs: true,
             };
             self.reset();
-            setState('destroyed');
+            setState("destroyed");
             returnObject = self = null;
 
             if (Storage.AudioContextConstructor) {
@@ -768,7 +799,7 @@ function RecordRTC(mediaStream, config) {
             config.disableLogs = disableLogsCache;
 
             if (!config.disableLogs) {
-                console.log('RecordRTC is destroyed.');
+                console.log("RecordRTC is destroyed.");
             }
         },
 
@@ -781,7 +812,7 @@ function RecordRTC(mediaStream, config) {
          * @example
          * alert(recorder.version);
          */
-        version: '5.6.3'
+        version: "5.6.4",
     };
 
     if (!this) {
@@ -799,31 +830,35 @@ function RecordRTC(mediaStream, config) {
     return returnObject;
 }
 
-RecordRTC.version = '5.6.3';
+RecordRTC.version = "5.6.4";
 
-if (typeof module !== 'undefined' /* && !!module.exports*/ ) {
+if (typeof module !== "undefined" /* && !!module.exports*/ ) {
     module.exports = RecordRTC;
 }
 
-if (typeof define === 'function' && define.amd) {
-    define('RecordRTC', [], function() {
+if (typeof define === "function" && define.amd) {
+    define("RecordRTC", [], function() {
         return RecordRTC;
     });
 }
 
 RecordRTC.getFromDisk = function(type, callback) {
     if (!callback) {
-        throw 'callback is mandatory.';
+        throw "callback is mandatory.";
     }
 
-    console.log('Getting recorded ' + (type === 'all' ? 'blobs' : type + ' blob ') + ' from disk!');
+    console.log(
+        "Getting recorded " +
+        (type === "all" ? "blobs" : type + " blob ") +
+        " from disk!"
+    );
     DiskStorage.Fetch(function(dataURL, _type) {
-        if (type !== 'all' && _type === type + 'Blob' && callback) {
+        if (type !== "all" && _type === type + "Blob" && callback) {
             callback(dataURL);
         }
 
-        if (type === 'all' && callback) {
-            callback(dataURL, _type.replace('Blob', ''));
+        if (type === "all" && callback) {
+            callback(dataURL, _type.replace("Blob", ""));
         }
     });
 };
@@ -841,7 +876,7 @@ RecordRTC.getFromDisk = function(type, callback) {
  * });
  */
 RecordRTC.writeToDisk = function(options) {
-    console.log('Writing recorded blob(s) to disk!');
+    console.log("Writing recorded blob(s) to disk!");
     options = options || {};
     if (options.audio && options.video && options.gif) {
         options.audio.getDataURL(function(audioDataURL) {
@@ -850,7 +885,7 @@ RecordRTC.writeToDisk = function(options) {
                     DiskStorage.Store({
                         audioBlob: audioDataURL,
                         videoBlob: videoDataURL,
-                        gifBlob: gifDataURL
+                        gifBlob: gifDataURL,
                     });
                 });
             });
@@ -860,7 +895,7 @@ RecordRTC.writeToDisk = function(options) {
             options.video.getDataURL(function(videoDataURL) {
                 DiskStorage.Store({
                     audioBlob: audioDataURL,
-                    videoBlob: videoDataURL
+                    videoBlob: videoDataURL,
                 });
             });
         });
@@ -869,7 +904,7 @@ RecordRTC.writeToDisk = function(options) {
             options.gif.getDataURL(function(gifDataURL) {
                 DiskStorage.Store({
                     audioBlob: audioDataURL,
-                    gifBlob: gifDataURL
+                    gifBlob: gifDataURL,
                 });
             });
         });
@@ -878,26 +913,26 @@ RecordRTC.writeToDisk = function(options) {
             options.gif.getDataURL(function(gifDataURL) {
                 DiskStorage.Store({
                     videoBlob: videoDataURL,
-                    gifBlob: gifDataURL
+                    gifBlob: gifDataURL,
                 });
             });
         });
     } else if (options.audio) {
         options.audio.getDataURL(function(audioDataURL) {
             DiskStorage.Store({
-                audioBlob: audioDataURL
+                audioBlob: audioDataURL,
             });
         });
     } else if (options.video) {
         options.video.getDataURL(function(videoDataURL) {
             DiskStorage.Store({
-                videoBlob: videoDataURL
+                videoBlob: videoDataURL,
             });
         });
     } else if (options.gif) {
         options.gif.getDataURL(function(gifDataURL) {
             DiskStorage.Store({
-                gifBlob: gifDataURL
+                gifBlob: gifDataURL,
             });
         });
     }
@@ -923,39 +958,57 @@ RecordRTC.writeToDisk = function(options) {
 function RecordRTCConfiguration(mediaStream, config) {
     if (!config.recorderType && !config.type) {
         if (!!config.audio && !!config.video) {
-            config.type = 'video';
+            config.type = "video";
         } else if (!!config.audio && !config.video) {
-            config.type = 'audio';
+            config.type = "audio";
         }
     }
 
     if (config.recorderType && !config.type) {
-        if (config.recorderType === WhammyRecorder || config.recorderType === CanvasRecorder || (typeof WebAssemblyRecorder !== 'undefined' && config.recorderType === WebAssemblyRecorder)) {
-            config.type = 'video';
+        if (
+            config.recorderType === WhammyRecorder ||
+            config.recorderType === CanvasRecorder ||
+            (typeof WebAssemblyRecorder !== "undefined" &&
+                config.recorderType === WebAssemblyRecorder)
+        ) {
+            config.type = "video";
         } else if (config.recorderType === GifRecorder) {
-            config.type = 'gif';
+            config.type = "gif";
         } else if (config.recorderType === StereoAudioRecorder) {
-            config.type = 'audio';
+            config.type = "audio";
         } else if (config.recorderType === MediaStreamRecorder) {
-            if (getTracks(mediaStream, 'audio').length && getTracks(mediaStream, 'video').length) {
-                config.type = 'video';
-            } else if (!getTracks(mediaStream, 'audio').length && getTracks(mediaStream, 'video').length) {
-                config.type = 'video';
-            } else if (getTracks(mediaStream, 'audio').length && !getTracks(mediaStream, 'video').length) {
-                config.type = 'audio';
+            if (
+                getTracks(mediaStream, "audio").length &&
+                getTracks(mediaStream, "video").length
+            ) {
+                config.type = "video";
+            } else if (
+                !getTracks(mediaStream, "audio").length &&
+                getTracks(mediaStream, "video").length
+            ) {
+                config.type = "video";
+            } else if (
+                getTracks(mediaStream, "audio").length &&
+                !getTracks(mediaStream, "video").length
+            ) {
+                config.type = "audio";
             } else {
                 // config.type = 'UnKnown';
             }
         }
     }
 
-    if (typeof MediaStreamRecorder !== 'undefined' && typeof MediaRecorder !== 'undefined' && 'requestData' in MediaRecorder.prototype) {
+    if (
+        typeof MediaStreamRecorder !== "undefined" &&
+        typeof MediaRecorder !== "undefined" &&
+        "requestData" in MediaRecorder.prototype
+    ) {
         if (!config.mimeType) {
-            config.mimeType = 'video/webm';
+            config.mimeType = "video/webm";
         }
 
         if (!config.type) {
-            config.type = config.mimeType.split('/')[0];
+            config.type = config.mimeType.split("/")[0];
         }
 
         if (!config.bitsPerSecond) {
@@ -966,10 +1019,10 @@ function RecordRTCConfiguration(mediaStream, config) {
     // consider default type=audio
     if (!config.type) {
         if (config.mimeType) {
-            config.type = config.mimeType.split('/')[0];
+            config.type = config.mimeType.split("/")[0];
         }
         if (!config.type) {
-            config.type = 'audio';
+            config.type = "audio";
         }
     }
 
@@ -1005,40 +1058,62 @@ function GetRecorderType(mediaStream, config) {
         recorder = StereoAudioRecorder;
     }
 
-    if (typeof MediaRecorder !== 'undefined' && 'requestData' in MediaRecorder.prototype && !isChrome) {
+    if (
+        typeof MediaRecorder !== "undefined" &&
+        "requestData" in MediaRecorder.prototype &&
+        !isChrome
+    ) {
         recorder = MediaStreamRecorder;
     }
 
     // video recorder (in WebM format)
-    if (config.type === 'video' && (isChrome || isOpera)) {
+    if (config.type === "video" && (isChrome || isOpera)) {
         recorder = WhammyRecorder;
 
-        if (typeof WebAssemblyRecorder !== 'undefined' && typeof ReadableStream !== 'undefined') {
+        if (
+            typeof WebAssemblyRecorder !== "undefined" &&
+            typeof ReadableStream !== "undefined"
+        ) {
             recorder = WebAssemblyRecorder;
         }
     }
 
     // video recorder (in Gif format)
-    if (config.type === 'gif') {
+    if (config.type === "gif") {
         recorder = GifRecorder;
     }
 
     // html2canvas recording!
-    if (config.type === 'canvas') {
+    if (config.type === "canvas") {
         recorder = CanvasRecorder;
     }
 
-    if (isMediaRecorderCompatible() && recorder !== CanvasRecorder && recorder !== GifRecorder && typeof MediaRecorder !== 'undefined' && 'requestData' in MediaRecorder.prototype) {
-        if (getTracks(mediaStream, 'video').length || getTracks(mediaStream, 'audio').length) {
+    if (
+        isMediaRecorderCompatible() &&
+        recorder !== CanvasRecorder &&
+        recorder !== GifRecorder &&
+        typeof MediaRecorder !== "undefined" &&
+        "requestData" in MediaRecorder.prototype
+    ) {
+        if (
+            getTracks(mediaStream, "video").length ||
+            getTracks(mediaStream, "audio").length
+        ) {
             // audio-only recording
-            if (config.type === 'audio') {
-                if (typeof MediaRecorder.isTypeSupported === 'function' && MediaRecorder.isTypeSupported('audio/webm')) {
+            if (config.type === "audio") {
+                if (
+                    typeof MediaRecorder.isTypeSupported === "function" &&
+                    MediaRecorder.isTypeSupported("audio/webm")
+                ) {
                     recorder = MediaStreamRecorder;
                 }
                 // else recorder = StereoAudioRecorder;
             } else {
                 // video or screen tracks
-                if (typeof MediaRecorder.isTypeSupported === 'function' && MediaRecorder.isTypeSupported('video/webm')) {
+                if (
+                    typeof MediaRecorder.isTypeSupported === "function" &&
+                    MediaRecorder.isTypeSupported("video/webm")
+                ) {
                     recorder = MediaStreamRecorder;
                 }
             }
@@ -1054,7 +1129,10 @@ function GetRecorderType(mediaStream, config) {
     }
 
     if (!config.disableLogs && !!recorder && !!recorder.name) {
-        console.log('Using recorderType:', recorder.name || recorder.constructor.name);
+        console.log(
+            "Using recorderType:",
+            recorder.name || recorder.constructor.name
+        );
     }
 
     if (!recorder && isSafari) {
@@ -1096,7 +1174,6 @@ function GetRecorderType(mediaStream, config) {
  */
 
 function MRecordRTC(mediaStream) {
-
     /**
      * This method attaches MediaStream object to {@link MRecordRTC}.
      * @param {MediaStream} mediaStream - A MediaStream object, either fetched using getUserMedia API, or generated using captureStreamUntilEnded or WebAudio API.
@@ -1125,7 +1202,7 @@ function MRecordRTC(mediaStream) {
      */
     this.mediaType = {
         audio: true,
-        video: true
+        video: true,
     };
 
     /**
@@ -1141,33 +1218,45 @@ function MRecordRTC(mediaStream) {
         var mimeType = this.mimeType || {
             audio: null,
             video: null,
-            gif: null
+            gif: null,
         };
 
-        if (typeof mediaType.audio !== 'function' && isMediaRecorderCompatible() && !getTracks(mediaStream, 'audio').length) {
+        if (
+            typeof mediaType.audio !== "function" &&
+            isMediaRecorderCompatible() &&
+            !getTracks(mediaStream, "audio").length
+        ) {
             mediaType.audio = false;
         }
 
-        if (typeof mediaType.video !== 'function' && isMediaRecorderCompatible() && !getTracks(mediaStream, 'video').length) {
+        if (
+            typeof mediaType.video !== "function" &&
+            isMediaRecorderCompatible() &&
+            !getTracks(mediaStream, "video").length
+        ) {
             mediaType.video = false;
         }
 
-        if (typeof mediaType.gif !== 'function' && isMediaRecorderCompatible() && !getTracks(mediaStream, 'video').length) {
+        if (
+            typeof mediaType.gif !== "function" &&
+            isMediaRecorderCompatible() &&
+            !getTracks(mediaStream, "video").length
+        ) {
             mediaType.gif = false;
         }
 
         if (!mediaType.audio && !mediaType.video && !mediaType.gif) {
-            throw 'MediaStream must have either audio or video tracks.';
+            throw "MediaStream must have either audio or video tracks.";
         }
 
         if (!!mediaType.audio) {
             recorderType = null;
-            if (typeof mediaType.audio === 'function') {
+            if (typeof mediaType.audio === "function") {
                 recorderType = mediaType.audio;
             }
 
             this.audioRecorder = new RecordRTC(mediaStream, {
-                type: 'audio',
+                type: "audio",
                 bufferSize: this.bufferSize,
                 sampleRate: this.sampleRate,
                 numberOfAudioChannels: this.numberOfAudioChannels || 2,
@@ -1175,7 +1264,7 @@ function MRecordRTC(mediaStream) {
                 recorderType: recorderType,
                 mimeType: mimeType.audio,
                 timeSlice: this.timeSlice,
-                onTimeStamp: this.onTimeStamp
+                onTimeStamp: this.onTimeStamp,
             });
 
             if (!mediaType.video) {
@@ -1185,14 +1274,18 @@ function MRecordRTC(mediaStream) {
 
         if (!!mediaType.video) {
             recorderType = null;
-            if (typeof mediaType.video === 'function') {
+            if (typeof mediaType.video === "function") {
                 recorderType = mediaType.video;
             }
 
             var newStream = mediaStream;
 
-            if (isMediaRecorderCompatible() && !!mediaType.audio && typeof mediaType.audio === 'function') {
-                var videoTrack = getTracks(mediaStream, 'video')[0];
+            if (
+                isMediaRecorderCompatible() &&
+                !!mediaType.audio &&
+                typeof mediaType.audio === "function"
+            ) {
+                var videoTrack = getTracks(mediaStream, "video")[0];
 
                 if (isFirefox) {
                     newStream = new MediaStream();
@@ -1210,7 +1303,7 @@ function MRecordRTC(mediaStream) {
             }
 
             this.videoRecorder = new RecordRTC(newStream, {
-                type: 'video',
+                type: "video",
                 video: this.video,
                 canvas: this.canvas,
                 frameInterval: this.frameInterval || 10,
@@ -1222,7 +1315,7 @@ function MRecordRTC(mediaStream) {
                 workerPath: this.workerPath,
                 webAssemblyPath: this.webAssemblyPath,
                 frameRate: this.frameRate, // used by WebAssemblyRecorder; values: usually 30; accepts any.
-                bitrate: this.bitrate // used by WebAssemblyRecorder; values: 0 to 1000+
+                bitrate: this.bitrate, // used by WebAssemblyRecorder; values: 0 to 1000+
             });
 
             if (!mediaType.audio) {
@@ -1237,7 +1330,11 @@ function MRecordRTC(mediaStream) {
 
             if (mediaType.audio instanceof StereoAudioRecorder && !!mediaType.video) {
                 isSingleRecorder = false;
-            } else if (mediaType.audio !== true && mediaType.video !== true && mediaType.audio !== mediaType.video) {
+            } else if (
+                mediaType.audio !== true &&
+                mediaType.video !== true &&
+                mediaType.audio !== mediaType.video
+            ) {
                 isSingleRecorder = false;
             }
 
@@ -1257,16 +1354,16 @@ function MRecordRTC(mediaStream) {
 
         if (!!mediaType.gif) {
             recorderType = null;
-            if (typeof mediaType.gif === 'function') {
+            if (typeof mediaType.gif === "function") {
                 recorderType = mediaType.gif;
             }
             this.gifRecorder = new RecordRTC(mediaStream, {
-                type: 'gif',
+                type: "gif",
                 frameRate: this.frameRate || 200,
                 quality: this.quality || 10,
                 disableLogs: this.disableLogs,
                 recorderType: recorderType,
-                mimeType: mimeType.gif
+                mimeType: mimeType.gif,
             });
             this.gifRecorder.startRecording();
         }
@@ -1289,19 +1386,19 @@ function MRecordRTC(mediaStream) {
 
         if (this.audioRecorder) {
             this.audioRecorder.stopRecording(function(blobURL) {
-                callback(blobURL, 'audio');
+                callback(blobURL, "audio");
             });
         }
 
         if (this.videoRecorder) {
             this.videoRecorder.stopRecording(function(blobURL) {
-                callback(blobURL, 'video');
+                callback(blobURL, "video");
             });
         }
 
         if (this.gifRecorder) {
             this.gifRecorder.stopRecording(function(blobURL) {
-                callback(blobURL, 'gif');
+                callback(blobURL, "gif");
             });
         }
     };
@@ -1428,27 +1525,27 @@ function MRecordRTC(mediaStream) {
                     getDataURL(blob.video, function(_videoDataURL) {
                         callback({
                             audio: _audioDataURL,
-                            video: _videoDataURL
+                            video: _videoDataURL,
                         });
                     });
                 });
             } else if (blob.audio) {
                 getDataURL(blob.audio, function(_audioDataURL) {
                     callback({
-                        audio: _audioDataURL
+                        audio: _audioDataURL,
                     });
                 });
             } else if (blob.video) {
                 getDataURL(blob.video, function(_videoDataURL) {
                     callback({
-                        video: _videoDataURL
+                        video: _videoDataURL,
                     });
                 });
             }
         });
 
         function getDataURL(blob, callback00) {
-            if (typeof Worker !== 'undefined') {
+            if (typeof Worker !== "undefined") {
                 var webWorker = processInWebWorker(function readFile(_blob) {
                     postMessage(new FileReaderSync().readAsDataURL(_blob));
                 });
@@ -1468,20 +1565,27 @@ function MRecordRTC(mediaStream) {
         }
 
         function processInWebWorker(_function) {
-            var blob = URL.createObjectURL(new Blob([_function.toString(),
-                'this.onmessage =  function (eee) {' + _function.name + '(eee.data);}'
-            ], {
-                type: 'application/javascript'
-            }));
+            var blob = URL.createObjectURL(
+                new Blob(
+                    [
+                        _function.toString(),
+                        "this.onmessage =  function (eee) {" +
+                        _function.name +
+                        "(eee.data);}",
+                    ], {
+                        type: "application/javascript",
+                    }
+                )
+            );
 
             var worker = new Worker(blob);
             var url;
-            if (typeof URL !== 'undefined') {
+            if (typeof URL !== "undefined") {
                 url = URL;
-            } else if (typeof webkitURL !== 'undefined') {
+            } else if (typeof webkitURL !== "undefined") {
                 url = webkitURL;
             } else {
-                throw 'Neither URL nor webkitURL detected.';
+                throw "Neither URL nor webkitURL detected.";
             }
             url.revokeObjectURL(blob);
             return worker;
@@ -1499,7 +1603,7 @@ function MRecordRTC(mediaStream) {
         RecordRTC.writeToDisk({
             audio: this.audioRecorder,
             video: this.videoRecorder,
-            gif: this.gifRecorder
+            gif: this.gifRecorder,
         });
     };
 
@@ -1519,18 +1623,18 @@ function MRecordRTC(mediaStream) {
         args = args || {
             audio: true,
             video: true,
-            gif: true
+            gif: true,
         };
 
         if (!!args.audio && this.audioRecorder) {
-            this.audioRecorder.save(typeof args.audio === 'string' ? args.audio : '');
+            this.audioRecorder.save(typeof args.audio === "string" ? args.audio : "");
         }
 
         if (!!args.video && this.videoRecorder) {
-            this.videoRecorder.save(typeof args.video === 'string' ? args.video : '');
+            this.videoRecorder.save(typeof args.video === "string" ? args.video : "");
         }
         if (!!args.gif && this.gifRecorder) {
-            this.gifRecorder.save(typeof args.gif === 'string' ? args.gif : '');
+            this.gifRecorder.save(typeof args.gif === "string" ? args.gif : "");
         }
     };
 }
@@ -1564,101 +1668,110 @@ MRecordRTC.getFromDisk = RecordRTC.getFromDisk;
  */
 MRecordRTC.writeToDisk = RecordRTC.writeToDisk;
 
-if (typeof RecordRTC !== 'undefined') {
+if (typeof RecordRTC !== "undefined") {
     RecordRTC.MRecordRTC = MRecordRTC;
 }
 
-var browserFakeUserAgent = 'Fake/5.0 (FakeOS) AppleWebKit/123 (KHTML, like Gecko) Fake/12.3.4567.89 Fake/123.45';
+var browserFakeUserAgent =
+    "Fake/5.0 (FakeOS) AppleWebKit/123 (KHTML, like Gecko) Fake/12.3.4567.89 Fake/123.45";
 
 (function(that) {
     if (!that) {
         return;
     }
 
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
         return;
     }
 
-    if (typeof global === 'undefined') {
+    if (typeof global === "undefined") {
         return;
     }
 
     global.navigator = {
         userAgent: browserFakeUserAgent,
-        getUserMedia: function() {}
+        getUserMedia: function() {},
     };
 
     if (!global.console) {
         global.console = {};
     }
 
-    if (typeof global.console.log === 'undefined' || typeof global.console.error === 'undefined') {
-        global.console.error = global.console.log = global.console.log || function() {
-            console.log(arguments);
-        };
+    if (
+        typeof global.console.log === "undefined" ||
+        typeof global.console.error === "undefined"
+    ) {
+        global.console.error = global.console.log =
+            global.console.log ||
+            function() {
+                console.log(arguments);
+            };
     }
 
-    if (typeof document === 'undefined') {
+    if (typeof document === "undefined") {
         /*global document:true */
         that.document = {
             documentElement: {
                 appendChild: function() {
-                    return '';
-                }
-            }
+                    return "";
+                },
+            },
         };
 
-        document.createElement = document.captureStream = document.mozCaptureStream = function() {
-            var obj = {
-                getContext: function() {
-                    return obj;
-                },
-                play: function() {},
-                pause: function() {},
-                drawImage: function() {},
-                toDataURL: function() {
-                    return '';
-                },
-                style: {}
+        document.createElement =
+            document.captureStream =
+            document.mozCaptureStream =
+            function() {
+                var obj = {
+                    getContext: function() {
+                        return obj;
+                    },
+                    play: function() {},
+                    pause: function() {},
+                    drawImage: function() {},
+                    toDataURL: function() {
+                        return "";
+                    },
+                    style: {},
+                };
+                return obj;
             };
-            return obj;
-        };
 
         that.HTMLVideoElement = function() {};
     }
 
-    if (typeof location === 'undefined') {
+    if (typeof location === "undefined") {
         /*global location:true */
         that.location = {
-            protocol: 'file:',
-            href: '',
-            hash: ''
+            protocol: "file:",
+            href: "",
+            hash: "",
         };
     }
 
-    if (typeof screen === 'undefined') {
+    if (typeof screen === "undefined") {
         /*global screen:true */
         that.screen = {
             width: 0,
-            height: 0
+            height: 0,
         };
     }
 
-    if (typeof URL === 'undefined') {
+    if (typeof URL === "undefined") {
         /*global screen:true */
         that.URL = {
             createObjectURL: function() {
-                return '';
+                return "";
             },
             revokeObjectURL: function() {
-                return '';
-            }
+                return "";
+            },
         };
     }
 
     /*global window:true */
     that.window = global;
-})(typeof global !== 'undefined' ? global : null);
+})(typeof global !== "undefined" ? global : null);
 
 // _____________________________
 // Cross-Browser-Declarations.js
@@ -1667,17 +1780,17 @@ var browserFakeUserAgent = 'Fake/5.0 (FakeOS) AppleWebKit/123 (KHTML, like Gecko
 
 /*jshint -W079 */
 var requestAnimationFrame = window.requestAnimationFrame;
-if (typeof requestAnimationFrame === 'undefined') {
-    if (typeof webkitRequestAnimationFrame !== 'undefined') {
+if (typeof requestAnimationFrame === "undefined") {
+    if (typeof webkitRequestAnimationFrame !== "undefined") {
         /*global requestAnimationFrame:true */
         requestAnimationFrame = webkitRequestAnimationFrame;
-    } else if (typeof mozRequestAnimationFrame !== 'undefined') {
+    } else if (typeof mozRequestAnimationFrame !== "undefined") {
         /*global requestAnimationFrame:true */
         requestAnimationFrame = mozRequestAnimationFrame;
-    } else if (typeof msRequestAnimationFrame !== 'undefined') {
+    } else if (typeof msRequestAnimationFrame !== "undefined") {
         /*global requestAnimationFrame:true */
         requestAnimationFrame = msRequestAnimationFrame;
-    } else if (typeof requestAnimationFrame === 'undefined') {
+    } else if (typeof requestAnimationFrame === "undefined") {
         // via: https://gist.github.com/paulirish/1579671
         var lastTime = 0;
 
@@ -1696,17 +1809,17 @@ if (typeof requestAnimationFrame === 'undefined') {
 
 /*jshint -W079 */
 var cancelAnimationFrame = window.cancelAnimationFrame;
-if (typeof cancelAnimationFrame === 'undefined') {
-    if (typeof webkitCancelAnimationFrame !== 'undefined') {
+if (typeof cancelAnimationFrame === "undefined") {
+    if (typeof webkitCancelAnimationFrame !== "undefined") {
         /*global cancelAnimationFrame:true */
         cancelAnimationFrame = webkitCancelAnimationFrame;
-    } else if (typeof mozCancelAnimationFrame !== 'undefined') {
+    } else if (typeof mozCancelAnimationFrame !== "undefined") {
         /*global cancelAnimationFrame:true */
         cancelAnimationFrame = mozCancelAnimationFrame;
-    } else if (typeof msCancelAnimationFrame !== 'undefined') {
+    } else if (typeof msCancelAnimationFrame !== "undefined") {
         /*global cancelAnimationFrame:true */
         cancelAnimationFrame = msCancelAnimationFrame;
-    } else if (typeof cancelAnimationFrame === 'undefined') {
+    } else if (typeof cancelAnimationFrame === "undefined") {
         /*global cancelAnimationFrame:true */
         cancelAnimationFrame = function(id) {
             clearTimeout(id);
@@ -1717,13 +1830,13 @@ if (typeof cancelAnimationFrame === 'undefined') {
 // WebAudio API representer
 var AudioContext = window.AudioContext;
 
-if (typeof AudioContext === 'undefined') {
-    if (typeof webkitAudioContext !== 'undefined') {
+if (typeof AudioContext === "undefined") {
+    if (typeof webkitAudioContext !== "undefined") {
         /*global AudioContext:true */
         AudioContext = webkitAudioContext;
     }
 
-    if (typeof mozAudioContext !== 'undefined') {
+    if (typeof mozAudioContext !== "undefined") {
         /*global AudioContext:true */
         AudioContext = mozAudioContext;
     }
@@ -1732,43 +1845,58 @@ if (typeof AudioContext === 'undefined') {
 /*jshint -W079 */
 var URL = window.URL;
 
-if (typeof URL === 'undefined' && typeof webkitURL !== 'undefined') {
+if (typeof URL === "undefined" && typeof webkitURL !== "undefined") {
     /*global URL:true */
     URL = webkitURL;
 }
 
-if (typeof navigator !== 'undefined' && typeof navigator.getUserMedia === 'undefined') { // maybe window.navigator?
-    if (typeof navigator.webkitGetUserMedia !== 'undefined') {
+if (
+    typeof navigator !== "undefined" &&
+    typeof navigator.getUserMedia === "undefined"
+) {
+    // maybe window.navigator?
+    if (typeof navigator.webkitGetUserMedia !== "undefined") {
         navigator.getUserMedia = navigator.webkitGetUserMedia;
     }
 
-    if (typeof navigator.mozGetUserMedia !== 'undefined') {
+    if (typeof navigator.mozGetUserMedia !== "undefined") {
         navigator.getUserMedia = navigator.mozGetUserMedia;
     }
 }
 
-var isEdge = navigator.userAgent.indexOf('Edge') !== -1 && (!!navigator.msSaveBlob || !!navigator.msSaveOrOpenBlob);
-var isOpera = !!window.opera || navigator.userAgent.indexOf('OPR/') !== -1;
-var isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1 && ('netscape' in window) && / rv:/.test(navigator.userAgent);
-var isChrome = (!isOpera && !isEdge && !!navigator.webkitGetUserMedia) || isElectron() || navigator.userAgent.toLowerCase().indexOf('chrome/') !== -1;
+var isEdge =
+    navigator.userAgent.indexOf("Edge") !== -1 &&
+    (!!navigator.msSaveBlob || !!navigator.msSaveOrOpenBlob);
+var isOpera = !!window.opera || navigator.userAgent.indexOf("OPR/") !== -1;
+var isFirefox =
+    navigator.userAgent.toLowerCase().indexOf("firefox") > -1 &&
+    "netscape" in window &&
+    / rv:/.test(navigator.userAgent);
+var isChrome =
+    (!isOpera && !isEdge && !!navigator.webkitGetUserMedia) ||
+    isElectron() ||
+    navigator.userAgent.toLowerCase().indexOf("chrome/") !== -1;
 
 var isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
 
-if (isSafari && !isChrome && navigator.userAgent.indexOf('CriOS') !== -1) {
+if (isSafari && !isChrome && navigator.userAgent.indexOf("CriOS") !== -1) {
     isSafari = false;
     isChrome = true;
 }
 
 var MediaStream = window.MediaStream;
 
-if (typeof MediaStream === 'undefined' && typeof webkitMediaStream !== 'undefined') {
+if (
+    typeof MediaStream === "undefined" &&
+    typeof webkitMediaStream !== "undefined"
+) {
     MediaStream = webkitMediaStream;
 }
 
 /*global MediaStream:true */
-if (typeof MediaStream !== 'undefined') {
+if (typeof MediaStream !== "undefined") {
     // override "stop" method for all browsers
-    if (typeof MediaStream.prototype.stop === 'undefined') {
+    if (typeof MediaStream.prototype.stop === "undefined") {
         MediaStream.prototype.stop = function() {
             this.getTracks().forEach(function(track) {
                 track.stop();
@@ -1788,12 +1916,12 @@ if (typeof MediaStream !== 'undefined') {
  */
 function bytesToSize(bytes) {
     var k = 1000;
-    var sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+    var sizes = ["Bytes", "KB", "MB", "GB", "TB"];
     if (bytes === 0) {
-        return '0 Bytes';
+        return "0 Bytes";
     }
     var i = parseInt(Math.floor(Math.log(bytes) / Math.log(k)), 10);
-    return (bytes / Math.pow(k, i)).toPrecision(3) + ' ' + sizes[i];
+    return (bytes / Math.pow(k, i)).toPrecision(3) + " " + sizes[i];
 }
 
 /**
@@ -1805,50 +1933,55 @@ function bytesToSize(bytes) {
  */
 function invokeSaveAsDialog(file, fileName) {
     if (!file) {
-        throw 'Blob object is required.';
+        throw "Blob object is required.";
     }
 
     if (!file.type) {
         try {
-            file.type = 'video/webm';
+            file.type = "video/webm";
         } catch (e) {}
     }
 
-    var fileExtension = (file.type || 'video/webm').split('/')[1];
-    if (fileExtension.indexOf(';') !== -1) {
+    var fileExtension = (file.type || "video/webm").split("/")[1];
+    if (fileExtension.indexOf(";") !== -1) {
         // extended mimetype, e.g. 'video/webm;codecs=vp8,opus'
-        fileExtension = fileExtension.split(';')[0];
+        fileExtension = fileExtension.split(";")[0];
     }
-    if (fileName && fileName.indexOf('.') !== -1) {
-        var splitted = fileName.split('.');
+    if (fileName && fileName.indexOf(".") !== -1) {
+        var splitted = fileName.split(".");
         fileName = splitted[0];
         fileExtension = splitted[1];
     }
 
-    var fileFullName = (fileName || (Math.round(Math.random() * 9999999999) + 888888888)) + '.' + fileExtension;
+    var fileFullName =
+        (fileName || Math.round(Math.random() * 9999999999) + 888888888) +
+        "." +
+        fileExtension;
 
-    if (typeof navigator.msSaveOrOpenBlob !== 'undefined') {
+    if (typeof navigator.msSaveOrOpenBlob !== "undefined") {
         return navigator.msSaveOrOpenBlob(file, fileFullName);
-    } else if (typeof navigator.msSaveBlob !== 'undefined') {
+    } else if (typeof navigator.msSaveBlob !== "undefined") {
         return navigator.msSaveBlob(file, fileFullName);
     }
 
-    var hyperlink = document.createElement('a');
+    var hyperlink = document.createElement("a");
     hyperlink.href = URL.createObjectURL(file);
     hyperlink.download = fileFullName;
 
-    hyperlink.style = 'display:none;opacity:0;color:transparent;';
+    hyperlink.style = "display:none;opacity:0;color:transparent;";
     (document.body || document.documentElement).appendChild(hyperlink);
 
-    if (typeof hyperlink.click === 'function') {
+    if (typeof hyperlink.click === "function") {
         hyperlink.click();
     } else {
-        hyperlink.target = '_blank';
-        hyperlink.dispatchEvent(new MouseEvent('click', {
-            view: window,
-            bubbles: true,
-            cancelable: true
-        }));
+        hyperlink.target = "_blank";
+        hyperlink.dispatchEvent(
+            new MouseEvent("click", {
+                view: window,
+                bubbles: true,
+                cancelable: true,
+            })
+        );
     }
 
     URL.revokeObjectURL(hyperlink.href);
@@ -1859,17 +1992,29 @@ function invokeSaveAsDialog(file, fileName) {
  **/
 function isElectron() {
     // Renderer process
-    if (typeof window !== 'undefined' && typeof window.process === 'object' && window.process.type === 'renderer') {
+    if (
+        typeof window !== "undefined" &&
+        typeof window.process === "object" &&
+        window.process.type === "renderer"
+    ) {
         return true;
     }
 
     // Main process
-    if (typeof process !== 'undefined' && typeof process.versions === 'object' && !!process.versions.electron) {
+    if (
+        typeof process !== "undefined" &&
+        typeof process.versions === "object" &&
+        !!process.versions.electron
+    ) {
         return true;
     }
 
     // Detect the user agent when the `nodeIntegration` option is set to true
-    if (typeof navigator === 'object' && typeof navigator.userAgent === 'string' && navigator.userAgent.indexOf('Electron') >= 0) {
+    if (
+        typeof navigator === "object" &&
+        typeof navigator.userAgent === "string" &&
+        navigator.userAgent.indexOf("Electron") >= 0
+    ) {
         return true;
     }
 
@@ -1882,14 +2027,14 @@ function getTracks(stream, kind) {
     }
 
     return stream.getTracks().filter(function(t) {
-        return t.kind === (kind || 'audio');
+        return t.kind === (kind || "audio");
     });
 }
 
 function setSrcObject(stream, element) {
-    if ('srcObject' in element) {
+    if ("srcObject" in element) {
         element.srcObject = stream;
-    } else if ('mozSrcObject' in element) {
+    } else if ("mozSrcObject" in element) {
         element.mozSrcObject = stream;
     } else {
         element.srcObject = stream;
@@ -1905,8 +2050,8 @@ function setSrcObject(stream, element) {
  */
 function getSeekableBlob(inputBlob, callback) {
     // EBML.js copyrights goes to: https://github.com/legokichi/ts-ebml
-    if (typeof EBML === 'undefined') {
-        throw new Error('Please link: https://www.webrtc-experiment.com/EBML.js');
+    if (typeof EBML === "undefined") {
+        throw new Error("Please link: https://www.webrtc-experiment.com/EBML.js");
     }
 
     var reader = new EBML.Reader();
@@ -1920,10 +2065,14 @@ function getSeekableBlob(inputBlob, callback) {
             reader.read(element);
         });
         reader.stop();
-        var refinedMetadataBuf = tools.makeMetadataSeekable(reader.metadatas, reader.duration, reader.cues);
+        var refinedMetadataBuf = tools.makeMetadataSeekable(
+            reader.metadatas,
+            reader.duration,
+            reader.cues
+        );
         var body = this.result.slice(reader.metadataSize);
         var newBlob = new Blob([refinedMetadataBuf, body], {
-            type: 'video/webm'
+            type: "video/webm",
         });
 
         callback(newBlob);
@@ -1931,7 +2080,7 @@ function getSeekableBlob(inputBlob, callback) {
     fileReader.readAsArrayBuffer(inputBlob);
 }
 
-if (typeof RecordRTC !== 'undefined') {
+if (typeof RecordRTC !== "undefined") {
     RecordRTC.invokeSaveAsDialog = invokeSaveAsDialog;
     RecordRTC.getTracks = getTracks;
     RecordRTC.getSeekableBlob = getSeekableBlob;
@@ -1954,13 +2103,13 @@ if (typeof RecordRTC !== 'undefined') {
 
 var Storage = {};
 
-if (typeof AudioContext !== 'undefined') {
+if (typeof AudioContext !== "undefined") {
     Storage.AudioContext = AudioContext;
-} else if (typeof webkitAudioContext !== 'undefined') {
+} else if (typeof webkitAudioContext !== "undefined") {
     Storage.AudioContext = webkitAudioContext;
 }
 
-if (typeof RecordRTC !== 'undefined') {
+if (typeof RecordRTC !== "undefined") {
     RecordRTC.Storage = Storage;
 }
 
@@ -1971,33 +2120,178 @@ function isMediaRecorderCompatible() {
 
     var nVer = navigator.appVersion;
     var nAgt = navigator.userAgent;
-    var fullVersion = '' + parseFloat(navigator.appVersion);
+    var fullVersion = "" + parseFloat(navigator.appVersion);
     var majorVersion = parseInt(navigator.appVersion, 10);
     var nameOffset, verOffset, ix;
 
     if (isChrome || isOpera) {
-        verOffset = nAgt.indexOf('Chrome');
+        verOffset = nAgt.indexOf("Chrome");
         fullVersion = nAgt.substring(verOffset + 7);
     }
 
     // trim the fullVersion string at semicolon/space if present
-    if ((ix = fullVersion.indexOf(';')) !== -1) {
+    if ((ix = fullVersion.indexOf(";")) !== -1) {
         fullVersion = fullVersion.substring(0, ix);
     }
 
-    if ((ix = fullVersion.indexOf(' ')) !== -1) {
+    if ((ix = fullVersion.indexOf(" ")) !== -1) {
         fullVersion = fullVersion.substring(0, ix);
     }
 
-    majorVersion = parseInt('' + fullVersion, 10);
+    majorVersion = parseInt("" + fullVersion, 10);
 
     if (isNaN(majorVersion)) {
-        fullVersion = '' + parseFloat(navigator.appVersion);
+        fullVersion = "" + parseFloat(navigator.appVersion);
         majorVersion = parseInt(navigator.appVersion, 10);
     }
 
     return majorVersion >= 49;
 }
+
+function IndexDBClient(filename) {
+    this.dbName = "video_chunks_db";
+    this.filename = filename;
+    this.dbVersion = 1;
+    this.db = null;
+}
+
+IndexDBClient.prototype.initialize = function() {
+    var self = this;
+    var openRequest = indexedDB.open(this.dbName, this.dbVersion);
+
+    openRequest.onupgradeneeded = function(event) {
+        var db = event.target.result;
+        if (!db.objectStoreNames.contains("videos")) {
+            db.createObjectStore("videos", {
+                keyPath: "filename",
+            });
+        }
+    };
+
+    openRequest.onsuccess = function(event) {
+        self.db = event.target.result;
+    };
+
+    openRequest.onerror = function(event) {
+        console.error("Error opening IndexedDB:", event.target.error);
+    };
+};
+
+IndexDBClient.prototype.put = function(arrayOfBlobs) {
+    if (!this.db) {
+        console.error("IndexedDB is not initialized");
+        return;
+    }
+
+    var transaction = this.db.transaction(["videos"], "readwrite");
+    var store = transaction.objectStore("videos");
+    var existingRecord = store.get(this.filename);
+
+    if (existingRecord) {
+        console.error("Record with the same filename already exists");
+        return;
+    }
+
+    var record = {
+        filename: this.filename,
+        content: arrayOfBlobs,
+        createdOn: new Date(),
+        lastUpdatedOn: new Date(),
+        status: "done",
+    };
+
+    var request = store.add(record);
+
+    request.onerror = function(event) {
+        console.error("Error adding record:", event.target.error);
+    };
+
+    request.onsuccess = function(event) {
+        console.log("Record added successfully");
+    };
+};
+
+IndexDBClient.prototype.stats = function() {
+    if (!this.db) {
+        console.error("IndexedDB is not initialized");
+        return;
+    }
+
+    var transaction = this.db.transaction(["videos"], "readonly");
+    var store = transaction.objectStore("videos");
+    var record = store.get(this.filename);
+
+    if (!record) {
+        console.error("Record not found");
+        return;
+    }
+
+    console.log("Filename:", record.filename);
+    console.log("Created On:", record.createdOn);
+    console.log("Last Updated On:", record.lastUpdatedOn);
+    console.log("Content Size:", record.content.length);
+    console.log("Status:", record.status);
+};
+
+IndexDBClient.prototype.getData = function() {
+    if (!this.db) {
+        console.error("IndexedDB is not initialized");
+        return;
+    }
+
+    var transaction = this.db.transaction(["videos"], "readonly");
+    var store = transaction.objectStore("videos");
+    var record = store.get(this.filename);
+
+    if (!record) {
+        console.error("Record not found");
+        return;
+    }
+
+    var content = record.content;
+    var completeBlob = new Blob(content, {
+        type: "video/mp4",
+    });
+    return completeBlob;
+};
+
+IndexDBClient.prototype.getDataAsArrayBuffer = function() {
+    if (!this.db) {
+        console.error("IndexedDB is not initialized");
+        return;
+    }
+
+    var transaction = this.db.transaction(["videos"], "readonly");
+    var store = transaction.objectStore("videos");
+    var record = store.get(this.filename);
+
+    if (!record) {
+        console.error("Record not found");
+        return;
+    }
+
+    return record.content;
+};
+
+IndexDBClient.prototype.reset = function() {
+    if (!this.db) {
+        console.error("IndexedDB is not initialized");
+        return;
+    }
+
+    var transaction = this.db.transaction(["videos"], "readwrite");
+    var store = transaction.objectStore("videos");
+
+    var deleteRequest = store.delete(this.filename);
+
+    deleteRequest.onsuccess = function(event) {
+        console.log("Record deleted successfully");
+    };
+
+    deleteRequest.onerror = function(event) {
+        console.error("Error deleting record:", event.target.error);
+    };
+};
 
 // ______________________
 // MediaStreamRecorder.js
@@ -2033,46 +2327,56 @@ function isMediaRecorderCompatible() {
  * @throws Will throw an error if first argument "MediaStream" is missing. Also throws error if "MediaRecorder API" are not supported by the browser.
  */
 
-function MediaStreamRecorder(mediaStream, config) {
+function MediaStreamRecorder(mediaStream, config, indexDBClient) {
     var self = this;
 
-    if (typeof mediaStream === 'undefined') {
-        throw 'First argument "MediaStream" is required.';
+    if (typeof mediaStream === "undefined") {
+        throw "First argument 'MediaStream' is required.";
     }
 
-    if (typeof MediaRecorder === 'undefined') {
-        throw 'Your browser does not support the Media Recorder API. Please try other modules e.g. WhammyRecorder or StereoAudioRecorder.';
+    if (typeof MediaRecorder === "undefined") {
+        throw "Your browser does not support the Media Recorder API. Please try other modules e.g. WhammyRecorder or StereoAudioRecorder.";
     }
 
     config = config || {
         // bitsPerSecond: 256 * 8 * 1024,
-        mimeType: 'video/webm'
+        mimeType: "video/webm",
     };
 
-    if (config.type === 'audio') {
-        if (getTracks(mediaStream, 'video').length && getTracks(mediaStream, 'audio').length) {
+    if (config.type === "audio") {
+        if (
+            getTracks(mediaStream, "video").length &&
+            getTracks(mediaStream, "audio").length
+        ) {
             var stream;
             if (!!navigator.mozGetUserMedia) {
                 stream = new MediaStream();
-                stream.addTrack(getTracks(mediaStream, 'audio')[0]);
+                stream.addTrack(getTracks(mediaStream, "audio")[0]);
             } else {
                 // webkitMediaStream
-                stream = new MediaStream(getTracks(mediaStream, 'audio'));
+                stream = new MediaStream(getTracks(mediaStream, "audio"));
             }
             mediaStream = stream;
         }
 
-        if (!config.mimeType || config.mimeType.toString().toLowerCase().indexOf('audio') === -1) {
-            config.mimeType = isChrome ? 'audio/webm' : 'audio/ogg';
+        if (
+            !config.mimeType ||
+            config.mimeType.toString().toLowerCase().indexOf("audio") === -1
+        ) {
+            config.mimeType = isChrome ? "audio/webm" : "audio/ogg";
         }
 
-        if (config.mimeType && config.mimeType.toString().toLowerCase() !== 'audio/ogg' && !!navigator.mozGetUserMedia) {
+        if (
+            config.mimeType &&
+            config.mimeType.toString().toLowerCase() !== "audio/ogg" &&
+            !!navigator.mozGetUserMedia
+        ) {
             // forcing better codecs on Firefox (via #166)
-            config.mimeType = 'audio/ogg';
+            config.mimeType = "audio/ogg";
         }
     }
 
-    var arrayOfBlobs = [];
+    // var arrayOfBlobs = [];
 
     /**
      * This method returns array of blobs. Use only with "timeSlice". Its useful to preview recording anytime, without using the "stop" method.
@@ -2083,7 +2387,7 @@ function MediaStreamRecorder(mediaStream, config) {
      * @returns {Array} Returns array of recorded blobs.
      */
     this.getArrayOfBlobs = function() {
-        return arrayOfBlobs;
+        return indexDBClient.getDataAsArrayBuffer();
     };
 
     /**
@@ -2099,12 +2403,15 @@ function MediaStreamRecorder(mediaStream, config) {
         self.clearRecordedData();
         self.timestamps = [];
         allStates = [];
-        arrayOfBlobs = [];
+        // arrayOfBlobs = [];
 
         var recorderHints = config;
 
         if (!config.disableLogs) {
-            console.log('Passing following config over MediaRecorder API.', recorderHints);
+            console.log(
+                "Passing following config over MediaRecorder API.",
+                recorderHints
+            );
         }
 
         if (mediaRecorder) {
@@ -2114,16 +2421,23 @@ function MediaStreamRecorder(mediaStream, config) {
 
         if (isChrome && !isMediaRecorderCompatible()) {
             // to support video-only recording on stable
-            recorderHints = 'video/vp8';
+            recorderHints = "video/vp8";
         }
 
-        if (typeof MediaRecorder.isTypeSupported === 'function' && recorderHints.mimeType) {
+        if (
+            typeof MediaRecorder.isTypeSupported === "function" &&
+            recorderHints.mimeType
+        ) {
             if (!MediaRecorder.isTypeSupported(recorderHints.mimeType)) {
                 if (!config.disableLogs) {
-                    console.warn('MediaRecorder API seems unable to record mimeType:', recorderHints.mimeType);
+                    console.warn(
+                        "MediaRecorder API seems unable to record mimeType:",
+                        recorderHints.mimeType
+                    );
                 }
 
-                recorderHints.mimeType = config.type === 'audio' ? 'audio/webm' : 'video/webm';
+                recorderHints.mimeType =
+                    config.type === "audio" ? "audio/webm" : "video/webm";
             }
         }
 
@@ -2139,28 +2453,41 @@ function MediaStreamRecorder(mediaStream, config) {
         }
 
         // old hack?
-        if (recorderHints.mimeType && !MediaRecorder.isTypeSupported && 'canRecordMimeType' in mediaRecorder && mediaRecorder.canRecordMimeType(recorderHints.mimeType) === false) {
+        if (
+            recorderHints.mimeType &&
+            !MediaRecorder.isTypeSupported &&
+            "canRecordMimeType" in mediaRecorder &&
+            mediaRecorder.canRecordMimeType(recorderHints.mimeType) === false
+        ) {
             if (!config.disableLogs) {
-                console.warn('MediaRecorder API seems unable to record mimeType:', recorderHints.mimeType);
+                console.warn(
+                    "MediaRecorder API seems unable to record mimeType:",
+                    recorderHints.mimeType
+                );
             }
         }
 
         // Dispatching OnDataAvailable Handler
         mediaRecorder.ondataavailable = function(e) {
+            console.log("[ABM] ondataavailable", e.data.size, e.data.type);
             if (e.data) {
-                allStates.push('ondataavailable: ' + bytesToSize(e.data.size));
+                allStates.push("ondataavailable: " + bytesToSize(e.data.size));
             }
 
-            if (typeof config.timeSlice === 'number') {
+            if (typeof config.timeSlice === "number") {
                 if (e.data && e.data.size) {
-                    arrayOfBlobs.push(e.data);
+                    console.log("[ABM] Writing chunk ", e.data.size);
+                    // arrayOfBlobs.push(e.data);
+                    indexDBClient.put(e.data);
                     updateTimeStamp();
 
-                    if (typeof config.ondataavailable === 'function') {
+                    if (typeof config.ondataavailable === "function") {
                         // intervals based blobs
-                        var blob = config.getNativeBlob ? e.data : new Blob([e.data], {
-                            type: getMimeType(recorderHints)
-                        });
+                        var blob = config.getNativeBlob ?
+                            e.data :
+                            new Blob([e.data], {
+                                type: getMimeType(recorderHints),
+                            });
                         config.ondataavailable(blob);
                     }
                 }
@@ -2171,17 +2498,21 @@ function MediaStreamRecorder(mediaStream, config) {
                 // make sure that stopRecording always getting fired
                 // even if there is invalid data
                 if (self.recordingCallback) {
-                    self.recordingCallback(new Blob([], {
-                        type: getMimeType(recorderHints)
-                    }));
+                    self.recordingCallback(
+                        new Blob([], {
+                            type: getMimeType(recorderHints),
+                        })
+                    );
                     self.recordingCallback = null;
                 }
                 return;
             }
 
-            self.blob = config.getNativeBlob ? e.data : new Blob([e.data], {
-                type: getMimeType(recorderHints)
-            });
+            self.blob = config.getNativeBlob ?
+                e.data :
+                new Blob([e.data], {
+                    type: getMimeType(recorderHints),
+                });
 
             if (self.recordingCallback) {
                 self.recordingCallback(self.blob);
@@ -2190,19 +2521,19 @@ function MediaStreamRecorder(mediaStream, config) {
         };
 
         mediaRecorder.onstart = function() {
-            allStates.push('started');
+            allStates.push("started");
         };
 
         mediaRecorder.onpause = function() {
-            allStates.push('paused');
+            allStates.push("paused");
         };
 
         mediaRecorder.onresume = function() {
-            allStates.push('resumed');
+            allStates.push("resumed");
         };
 
         mediaRecorder.onstop = function() {
-            allStates.push('stopped');
+            allStates.push("stopped");
         };
 
         mediaRecorder.onerror = function(error) {
@@ -2211,37 +2542,67 @@ function MediaStreamRecorder(mediaStream, config) {
             }
 
             if (!error.name) {
-                error.name = 'UnknownError';
+                error.name = "UnknownError";
             }
 
-            allStates.push('error: ' + error);
+            allStates.push("error: " + error);
 
             if (!config.disableLogs) {
                 // via: https://w3c.github.io/mediacapture-record/MediaRecorder.html#exception-summary
-                if (error.name.toString().toLowerCase().indexOf('invalidstate') !== -1) {
-                    console.error('The MediaRecorder is not in a state in which the proposed operation is allowed to be executed.', error);
-                } else if (error.name.toString().toLowerCase().indexOf('notsupported') !== -1) {
-                    console.error('MIME type (', recorderHints.mimeType, ') is not supported.', error);
-                } else if (error.name.toString().toLowerCase().indexOf('security') !== -1) {
-                    console.error('MediaRecorder security error', error);
+                if (
+                    error.name.toString().toLowerCase().indexOf("invalidstate") !== -1
+                ) {
+                    console.error(
+                        "The MediaRecorder is not in a state in which the proposed operation is allowed to be executed.",
+                        error
+                    );
+                } else if (
+                    error.name.toString().toLowerCase().indexOf("notsupported") !== -1
+                ) {
+                    console.error(
+                        "MIME type (",
+                        recorderHints.mimeType,
+                        ") is not supported.",
+                        error
+                    );
+                } else if (
+                    error.name.toString().toLowerCase().indexOf("security") !== -1
+                ) {
+                    console.error("MediaRecorder security error", error);
                 }
 
                 // older code below
-                else if (error.name === 'OutOfMemory') {
-                    console.error('The UA has exhaused the available memory. User agents SHOULD provide as much additional information as possible in the message attribute.', error);
-                } else if (error.name === 'IllegalStreamModification') {
-                    console.error('A modification to the stream has occurred that makes it impossible to continue recording. An example would be the addition of a Track while recording is occurring. User agents SHOULD provide as much additional information as possible in the message attribute.', error);
-                } else if (error.name === 'OtherRecordingError') {
-                    console.error('Used for an fatal error other than those listed above. User agents SHOULD provide as much additional information as possible in the message attribute.', error);
-                } else if (error.name === 'GenericError') {
-                    console.error('The UA cannot provide the codec or recording option that has been requested.', error);
+                else if (error.name === "OutOfMemory") {
+                    console.error(
+                        "The UA has exhaused the available memory. User agents SHOULD provide as much additional information as possible in the message attribute.",
+                        error
+                    );
+                } else if (error.name === "IllegalStreamModification") {
+                    console.error(
+                        "A modification to the stream has occurred that makes it impossible to continue recording. An example would be the addition of a Track while recording is occurring. User agents SHOULD provide as much additional information as possible in the message attribute.",
+                        error
+                    );
+                } else if (error.name === "OtherRecordingError") {
+                    console.error(
+                        "Used for an fatal error other than those listed above. User agents SHOULD provide as much additional information as possible in the message attribute.",
+                        error
+                    );
+                } else if (error.name === "GenericError") {
+                    console.error(
+                        "The UA cannot provide the codec or recording option that has been requested.",
+                        error
+                    );
                 } else {
-                    console.error('MediaRecorder Error', error);
+                    console.error("MediaRecorder Error", error);
                 }
             }
 
             (function(looper) {
-                if (!self.manuallyStopped && mediaRecorder && mediaRecorder.state === 'inactive') {
+                if (
+                    !self.manuallyStopped &&
+                    mediaRecorder &&
+                    mediaRecorder.state === "inactive"
+                ) {
                     delete config.timeslice;
 
                     // 10 minutes, enough?
@@ -2252,12 +2613,15 @@ function MediaStreamRecorder(mediaStream, config) {
                 setTimeout(looper, 1000);
             })();
 
-            if (mediaRecorder.state !== 'inactive' && mediaRecorder.state !== 'stopped') {
+            if (
+                mediaRecorder.state !== "inactive" &&
+                mediaRecorder.state !== "stopped"
+            ) {
                 mediaRecorder.stop();
             }
         };
 
-        if (typeof config.timeSlice === 'number') {
+        if (typeof config.timeSlice === "number") {
             updateTimeStamp();
             mediaRecorder.start(config.timeSlice);
         } else {
@@ -2283,8 +2647,11 @@ function MediaStreamRecorder(mediaStream, config) {
     function updateTimeStamp() {
         self.timestamps.push(new Date().getTime());
 
-        if (typeof config.onTimeStamp === 'function') {
-            config.onTimeStamp(self.timestamps[self.timestamps.length - 1], self.timestamps);
+        if (typeof config.onTimeStamp === "function") {
+            config.onTimeStamp(
+                self.timestamps[self.timestamps.length - 1],
+                self.timestamps
+            );
         }
     }
 
@@ -2293,7 +2660,7 @@ function MediaStreamRecorder(mediaStream, config) {
             return mediaRecorder.mimeType;
         }
 
-        return secondObject.mimeType || 'video/webm';
+        return secondObject.mimeType || "video/webm";
     }
 
     /**
@@ -2317,15 +2684,21 @@ function MediaStreamRecorder(mediaStream, config) {
 
         this.recordingCallback = callback;
 
-        if (mediaRecorder.state === 'recording') {
+        if (mediaRecorder.state === "recording") {
             mediaRecorder.stop();
         }
 
-        if (typeof config.timeSlice === 'number') {
+        if (typeof config.timeSlice === "number") {
+            console.info("[ABM] Timeslicing function...");
             setTimeout(function() {
-                self.blob = new Blob(arrayOfBlobs, {
-                    type: getMimeType(config)
-                });
+                console.info(
+                    "[ABM] Running the timeslicing loop...",
+                    mediaRecorder.state
+                );
+                // self.blob = new Blob(arrayOfBlobs, {
+                //     type: getMimeType(config),
+                // });
+                self.blob = indexDBClient.getData();
 
                 self.recordingCallback(self.blob);
             }, 100);
@@ -2344,7 +2717,7 @@ function MediaStreamRecorder(mediaStream, config) {
             return;
         }
 
-        if (mediaRecorder.state === 'recording') {
+        if (mediaRecorder.state === "recording") {
             mediaRecorder.pause();
         }
     };
@@ -2361,7 +2734,7 @@ function MediaStreamRecorder(mediaStream, config) {
             return;
         }
 
-        if (mediaRecorder.state === 'paused') {
+        if (mediaRecorder.state === "paused") {
             mediaRecorder.resume();
         }
     };
@@ -2374,7 +2747,7 @@ function MediaStreamRecorder(mediaStream, config) {
      * recorder.clearRecordedData();
      */
     this.clearRecordedData = function() {
-        if (mediaRecorder && mediaRecorder.state === 'recording') {
+        if (mediaRecorder && mediaRecorder.state === "recording") {
             self.stop(clearRecordedDataCB);
         }
 
@@ -2382,7 +2755,8 @@ function MediaStreamRecorder(mediaStream, config) {
     };
 
     function clearRecordedDataCB() {
-        arrayOfBlobs = [];
+        // arrayOfBlobs = [];
+        indexDBClient.reset();
         mediaRecorder = null;
         self.timestamps = [];
     }
@@ -2406,11 +2780,12 @@ function MediaStreamRecorder(mediaStream, config) {
     };
 
     function isMediaStreamActive() {
-        if ('active' in mediaStream) {
+        if ("active" in mediaStream) {
             if (!mediaStream.active) {
                 return false;
             }
-        } else if ('ended' in mediaStream) { // old hack
+        } else if ("ended" in mediaStream) {
+            // old hack
             if (mediaStream.ended) {
                 return false;
             }
@@ -2428,7 +2803,6 @@ function MediaStreamRecorder(mediaStream, config) {
      */
     this.blob = null;
 
-
     /**
      * Get MediaRecorder readonly state.
      * @method
@@ -2439,10 +2813,10 @@ function MediaStreamRecorder(mediaStream, config) {
      */
     this.getState = function() {
         if (!mediaRecorder) {
-            return 'inactive';
+            return "inactive";
         }
 
-        return mediaRecorder.state || 'inactive';
+        return mediaRecorder.state || "inactive";
     };
 
     // list of all recording states
@@ -2460,11 +2834,11 @@ function MediaStreamRecorder(mediaStream, config) {
         return allStates;
     };
 
-    // if any Track within the MediaStream is muted or not enabled at any time, 
-    // the browser will only record black frames 
+    // if any Track within the MediaStream is muted or not enabled at any time,
+    // the browser will only record black frames
     // or silence since that is the content produced by the Track
     // so we need to stopRecording as soon as any single track ends.
-    if (typeof config.checkForInactiveTracks === 'undefined') {
+    if (typeof config.checkForInactiveTracks === "undefined") {
         config.checkForInactiveTracks = false; // disable to minimize CPU usage
     }
 
@@ -2479,7 +2853,7 @@ function MediaStreamRecorder(mediaStream, config) {
 
         if (isMediaStreamActive() === false) {
             if (!config.disableLogs) {
-                console.log('MediaStream seems stopped.');
+                console.log("MediaStream seems stopped.");
             }
             self.stop();
             return;
@@ -2489,13 +2863,13 @@ function MediaStreamRecorder(mediaStream, config) {
     })();
 
     // for debugging
-    this.name = 'MediaStreamRecorder';
+    this.name = "MediaStreamRecorder";
     this.toString = function() {
         return this.name;
     };
 }
 
-if (typeof RecordRTC !== 'undefined') {
+if (typeof RecordRTC !== "undefined") {
     RecordRTC.MediaStreamRecorder = MediaStreamRecorder;
 }
 
@@ -2526,8 +2900,8 @@ if (typeof RecordRTC !== 'undefined') {
  */
 
 function StereoAudioRecorder(mediaStream, config) {
-    if (!getTracks(mediaStream, 'audio').length) {
-        throw 'Your stream has no audio tracks.';
+    if (!getTracks(mediaStream, "audio").length) {
+        throw "Your stream has no audio tracks.";
     }
 
     config = config || {};
@@ -2569,14 +2943,17 @@ function StereoAudioRecorder(mediaStream, config) {
     }
 
     if (!config.disableLogs) {
-        console.log('StereoAudioRecorder is set to record number of channels: ' + numberOfAudioChannels);
+        console.log(
+            "StereoAudioRecorder is set to record number of channels: " +
+            numberOfAudioChannels
+        );
     }
 
-    // if any Track within the MediaStream is muted or not enabled at any time, 
-    // the browser will only record black frames 
+    // if any Track within the MediaStream is muted or not enabled at any time,
+    // the browser will only record black frames
     // or silence since that is the content produced by the Track
     // so we need to stopRecording as soon as any single track ends.
-    if (typeof config.checkForInactiveTracks === 'undefined') {
+    if (typeof config.checkForInactiveTracks === "undefined") {
         config.checkForInactiveTracks = true;
     }
 
@@ -2586,11 +2963,12 @@ function StereoAudioRecorder(mediaStream, config) {
             return true;
         }
 
-        if ('active' in mediaStream) {
+        if ("active" in mediaStream) {
             if (!mediaStream.active) {
                 return false;
             }
-        } else if ('ended' in mediaStream) { // old hack
+        } else if ("ended" in mediaStream) {
+            // old hack
             if (mediaStream.ended) {
                 return false;
             }
@@ -2607,7 +2985,7 @@ function StereoAudioRecorder(mediaStream, config) {
      */
     this.record = function() {
         if (isMediaStreamActive() === false) {
-            throw 'Please make sure MediaStream is active.';
+            throw "Please make sure MediaStream is active.";
         }
 
         resetVariables();
@@ -2615,7 +2993,7 @@ function StereoAudioRecorder(mediaStream, config) {
         isAudioProcessStarted = isPaused = false;
         recording = true;
 
-        if (typeof config.timeSlice !== 'undefined') {
+        if (typeof config.timeSlice !== "undefined") {
             looper();
         }
     };
@@ -2636,8 +3014,16 @@ function StereoAudioRecorder(mediaStream, config) {
                 rightBuffers = mergeBuffers(rightBuffers, internalInterleavedLength);
 
                 if (desiredSampRate) {
-                    leftBuffers = interpolateArray(leftBuffers, desiredSampRate, sampleRate);
-                    rightBuffers = interpolateArray(rightBuffers, desiredSampRate, sampleRate);
+                    leftBuffers = interpolateArray(
+                        leftBuffers,
+                        desiredSampRate,
+                        sampleRate
+                    );
+                    rightBuffers = interpolateArray(
+                        rightBuffers,
+                        desiredSampRate,
+                        sampleRate
+                    );
                 }
             }
 
@@ -2645,7 +3031,11 @@ function StereoAudioRecorder(mediaStream, config) {
                 leftBuffers = mergeBuffers(leftBuffers, internalInterleavedLength);
 
                 if (desiredSampRate) {
-                    leftBuffers = interpolateArray(leftBuffers, desiredSampRate, sampleRate);
+                    leftBuffers = interpolateArray(
+                        leftBuffers,
+                        desiredSampRate,
+                        sampleRate
+                    );
                 }
             }
 
@@ -2657,7 +3047,9 @@ function StereoAudioRecorder(mediaStream, config) {
             // for changing the sampling rate, reference:
             // http://stackoverflow.com/a/28977136/552182
             function interpolateArray(data, newSampleRate, oldSampleRate) {
-                var fitCount = Math.round(data.length * (newSampleRate / oldSampleRate));
+                var fitCount = Math.round(
+                    data.length * (newSampleRate / oldSampleRate)
+                );
                 var newData = [];
                 var springFactor = Number((data.length - 1) / (fitCount - 1));
                 newData[0] = data[0];
@@ -2732,21 +3124,21 @@ function StereoAudioRecorder(mediaStream, config) {
 
             var view = new DataView(buffer);
 
-            // RIFF chunk descriptor/identifier 
-            writeUTFBytes(view, 0, 'RIFF');
+            // RIFF chunk descriptor/identifier
+            writeUTFBytes(view, 0, "RIFF");
 
             // RIFF chunk length
             // changed "44" to "36" via #401
             view.setUint32(4, 36 + interleavedLength * 2, true);
 
-            // RIFF type 
-            writeUTFBytes(view, 8, 'WAVE');
+            // RIFF type
+            writeUTFBytes(view, 8, "WAVE");
 
-            // format chunk identifier 
+            // format chunk identifier
             // FMT sub-chunk
-            writeUTFBytes(view, 12, 'fmt ');
+            writeUTFBytes(view, 12, "fmt ");
 
-            // format chunk length 
+            // format chunk length
             view.setUint32(16, 16, true);
 
             // sample format (raw)
@@ -2755,23 +3147,23 @@ function StereoAudioRecorder(mediaStream, config) {
             // stereo (2 channels)
             view.setUint16(22, numberOfAudioChannels, true);
 
-            // sample rate 
+            // sample rate
             view.setUint32(24, sampleRate, true);
 
             // byte rate (sample rate * block align)
             view.setUint32(28, sampleRate * numberOfAudioChannels * 2, true);
 
-            // block align (channel count * bytes per sample) 
+            // block align (channel count * bytes per sample)
             view.setUint16(32, numberOfAudioChannels * 2, true);
 
-            // bits per sample 
+            // bits per sample
             view.setUint16(34, 16, true);
 
             // data sub-chunk
-            // data chunk identifier 
-            writeUTFBytes(view, 36, 'data');
+            // data chunk identifier
+            writeUTFBytes(view, 36, "data");
 
-            // data chunk length 
+            // data chunk length
             view.setUint32(40, interleavedLength * 2, true);
 
             // write the PCM samples
@@ -2779,20 +3171,20 @@ function StereoAudioRecorder(mediaStream, config) {
             var index = 44;
             var volume = 1;
             for (var i = 0; i < lng; i++) {
-                view.setInt16(index, interleaved[i] * (0x7FFF * volume), true);
+                view.setInt16(index, interleaved[i] * (0x7fff * volume), true);
                 index += 2;
             }
 
             if (cb) {
                 return cb({
                     buffer: buffer,
-                    view: view
+                    view: view,
                 });
             }
 
             postMessage({
                 buffer: buffer,
-                view: view
+                view: view,
             });
         }
 
@@ -2802,7 +3194,6 @@ function StereoAudioRecorder(mediaStream, config) {
             });
             return;
         }
-
 
         var webWorker = processInWebWorker(mergeAudioBuffers);
 
@@ -2820,11 +3211,18 @@ function StereoAudioRecorder(mediaStream, config) {
     }
 
     function processInWebWorker(_function) {
-        var workerURL = URL.createObjectURL(new Blob([_function.toString(),
-            ';this.onmessage =  function (eee) {' + _function.name + '(eee.data);}'
-        ], {
-            type: 'application/javascript'
-        }));
+        var workerURL = URL.createObjectURL(
+            new Blob(
+                [
+                    _function.toString(),
+                    ";this.onmessage =  function (eee) {" +
+                    _function.name +
+                    "(eee.data);}",
+                ], {
+                    type: "application/javascript",
+                }
+            )
+        );
 
         var worker = new Worker(workerURL);
         worker.workerURL = workerURL;
@@ -2848,69 +3246,75 @@ function StereoAudioRecorder(mediaStream, config) {
         recording = false;
 
         mergeLeftRightBuffers({
-            desiredSampRate: desiredSampRate,
-            sampleRate: sampleRate,
-            numberOfAudioChannels: numberOfAudioChannels,
-            internalInterleavedLength: recordingLength,
-            leftBuffers: leftchannel,
-            rightBuffers: numberOfAudioChannels === 1 ? [] : rightchannel,
-            noWorker: config.noWorker
-        }, function(buffer, view) {
-            /**
-             * @property {Blob} blob - The recorded blob object.
-             * @memberof StereoAudioRecorder
-             * @example
-             * recorder.stop(function(){
-             *     var blob = recorder.blob;
-             * });
-             */
-            self.blob = new Blob([view], {
-                type: 'audio/wav'
-            });
+                desiredSampRate: desiredSampRate,
+                sampleRate: sampleRate,
+                numberOfAudioChannels: numberOfAudioChannels,
+                internalInterleavedLength: recordingLength,
+                leftBuffers: leftchannel,
+                rightBuffers: numberOfAudioChannels === 1 ? [] : rightchannel,
+                noWorker: config.noWorker,
+            },
+            function(buffer, view) {
+                /**
+                 * @property {Blob} blob - The recorded blob object.
+                 * @memberof StereoAudioRecorder
+                 * @example
+                 * recorder.stop(function(){
+                 *     var blob = recorder.blob;
+                 * });
+                 */
+                self.blob = new Blob([view], {
+                    type: "audio/wav",
+                });
 
-            /**
-             * @property {ArrayBuffer} buffer - The recorded buffer object.
-             * @memberof StereoAudioRecorder
-             * @example
-             * recorder.stop(function(){
-             *     var buffer = recorder.buffer;
-             * });
-             */
-            self.buffer = new ArrayBuffer(view.buffer.byteLength);
+                /**
+                 * @property {ArrayBuffer} buffer - The recorded buffer object.
+                 * @memberof StereoAudioRecorder
+                 * @example
+                 * recorder.stop(function(){
+                 *     var buffer = recorder.buffer;
+                 * });
+                 */
+                self.buffer = new ArrayBuffer(view.buffer.byteLength);
 
-            /**
-             * @property {DataView} view - The recorded data-view object.
-             * @memberof StereoAudioRecorder
-             * @example
-             * recorder.stop(function(){
-             *     var view = recorder.view;
-             * });
-             */
-            self.view = view;
+                /**
+                 * @property {DataView} view - The recorded data-view object.
+                 * @memberof StereoAudioRecorder
+                 * @example
+                 * recorder.stop(function(){
+                 *     var view = recorder.view;
+                 * });
+                 */
+                self.view = view;
 
-            self.sampleRate = desiredSampRate || sampleRate;
-            self.bufferSize = bufferSize;
+                self.sampleRate = desiredSampRate || sampleRate;
+                self.bufferSize = bufferSize;
 
-            // recorded audio length
-            self.length = recordingLength;
+                // recorded audio length
+                self.length = recordingLength;
 
-            isAudioProcessStarted = false;
+                isAudioProcessStarted = false;
 
-            if (callback) {
-                callback(self.blob);
+                if (callback) {
+                    callback(self.blob);
+                }
             }
-        });
+        );
     };
 
-    if (typeof RecordRTC.Storage === 'undefined') {
+    if (typeof RecordRTC.Storage === "undefined") {
         RecordRTC.Storage = {
             AudioContextConstructor: null,
-            AudioContext: window.AudioContext || window.webkitAudioContext
+            AudioContext: window.AudioContext || window.webkitAudioContext,
         };
     }
 
-    if (!RecordRTC.Storage.AudioContextConstructor || RecordRTC.Storage.AudioContextConstructor.state === 'closed') {
-        RecordRTC.Storage.AudioContextConstructor = new RecordRTC.Storage.AudioContext();
+    if (
+        !RecordRTC.Storage.AudioContextConstructor ||
+        RecordRTC.Storage.AudioContextConstructor.state === "closed"
+    ) {
+        RecordRTC.Storage.AudioContextConstructor =
+            new RecordRTC.Storage.AudioContext();
     }
 
     var context = RecordRTC.Storage.AudioContextConstructor;
@@ -2937,20 +3341,32 @@ function StereoAudioRecorder(mediaStream, config) {
      */
 
     // "0" means, let chrome decide the most accurate buffer-size for current platform.
-    var bufferSize = typeof config.bufferSize === 'undefined' ? 4096 : config.bufferSize;
+    var bufferSize =
+        typeof config.bufferSize === "undefined" ? 4096 : config.bufferSize;
 
     if (legalBufferValues.indexOf(bufferSize) === -1) {
         if (!config.disableLogs) {
-            console.log('Legal values for buffer-size are ' + JSON.stringify(legalBufferValues, null, '\t'));
+            console.log(
+                "Legal values for buffer-size are " +
+                JSON.stringify(legalBufferValues, null, "\t")
+            );
         }
     }
 
     if (context.createJavaScriptNode) {
-        jsAudioNode = context.createJavaScriptNode(bufferSize, numberOfAudioChannels, numberOfAudioChannels);
+        jsAudioNode = context.createJavaScriptNode(
+            bufferSize,
+            numberOfAudioChannels,
+            numberOfAudioChannels
+        );
     } else if (context.createScriptProcessor) {
-        jsAudioNode = context.createScriptProcessor(bufferSize, numberOfAudioChannels, numberOfAudioChannels);
+        jsAudioNode = context.createScriptProcessor(
+            bufferSize,
+            numberOfAudioChannels,
+            numberOfAudioChannels
+        );
     } else {
-        throw 'WebAudio API has no support on this browser.';
+        throw "WebAudio API has no support on this browser.";
     }
 
     // connect the stream to the script processor
@@ -2977,18 +3393,21 @@ function StereoAudioRecorder(mediaStream, config) {
      *     sampleRate: 44100
      * });
      */
-    var sampleRate = typeof config.sampleRate !== 'undefined' ? config.sampleRate : context.sampleRate || 44100;
+    var sampleRate =
+        typeof config.sampleRate !== "undefined" ?
+        config.sampleRate :
+        context.sampleRate || 44100;
 
     if (sampleRate < 22050 || sampleRate > 96000) {
         // Ref: http://stackoverflow.com/a/26303918/552182
         if (!config.disableLogs) {
-            console.log('sample-rate must be under range 22050 and 96000.');
+            console.log("sample-rate must be under range 22050 and 96000.");
         }
     }
 
     if (!config.disableLogs) {
         if (config.desiredSampRate) {
-            console.log('Desired sample-rate: ' + config.desiredSampRate);
+            console.log("Desired sample-rate: " + config.desiredSampRate);
         }
     }
 
@@ -3013,12 +3432,12 @@ function StereoAudioRecorder(mediaStream, config) {
      */
     this.resume = function() {
         if (isMediaStreamActive() === false) {
-            throw 'Please make sure MediaStream is active.';
+            throw "Please make sure MediaStream is active.";
         }
 
         if (!recording) {
             if (!config.disableLogs) {
-                console.log('Seems recording has been restarted.');
+                console.log("Seems recording has been restarted.");
             }
             this.record();
             return;
@@ -3063,7 +3482,7 @@ function StereoAudioRecorder(mediaStream, config) {
         intervalsBasedBuffers = {
             left: [],
             right: [],
-            recordingLength: 0
+            recordingLength: 0,
         };
     }
 
@@ -3083,7 +3502,7 @@ function StereoAudioRecorder(mediaStream, config) {
     }
 
     // for debugging
-    this.name = 'StereoAudioRecorder';
+    this.name = "StereoAudioRecorder";
     this.toString = function() {
         return this.name;
     };
@@ -3097,7 +3516,7 @@ function StereoAudioRecorder(mediaStream, config) {
 
         if (isMediaStreamActive() === false) {
             if (!config.disableLogs) {
-                console.log('MediaStream seems stopped.');
+                console.log("MediaStream seems stopped.");
             }
             jsAudioNode.disconnect();
             recording = false;
@@ -3146,7 +3565,7 @@ function StereoAudioRecorder(mediaStream, config) {
         // export raw PCM
         self.recordingLength = recordingLength;
 
-        if (typeof config.timeSlice !== 'undefined') {
+        if (typeof config.timeSlice !== "undefined") {
             intervalsBasedBuffers.recordingLength += bufferSize;
             intervalsBasedBuffers.left.push(chLeft);
 
@@ -3177,36 +3596,42 @@ function StereoAudioRecorder(mediaStream, config) {
     var intervalsBasedBuffers = {
         left: [],
         right: [],
-        recordingLength: 0
+        recordingLength: 0,
     };
 
     // this looper is used to support intervals based blobs (via timeSlice+ondataavailable)
     function looper() {
-        if (!recording || typeof config.ondataavailable !== 'function' || typeof config.timeSlice === 'undefined') {
+        if (
+            !recording ||
+            typeof config.ondataavailable !== "function" ||
+            typeof config.timeSlice === "undefined"
+        ) {
             return;
         }
 
         if (intervalsBasedBuffers.left.length) {
             mergeLeftRightBuffers({
-                desiredSampRate: desiredSampRate,
-                sampleRate: sampleRate,
-                numberOfAudioChannels: numberOfAudioChannels,
-                internalInterleavedLength: intervalsBasedBuffers.recordingLength,
-                leftBuffers: intervalsBasedBuffers.left,
-                rightBuffers: numberOfAudioChannels === 1 ? [] : intervalsBasedBuffers.right
-            }, function(buffer, view) {
-                var blob = new Blob([view], {
-                    type: 'audio/wav'
-                });
-                config.ondataavailable(blob);
+                    desiredSampRate: desiredSampRate,
+                    sampleRate: sampleRate,
+                    numberOfAudioChannels: numberOfAudioChannels,
+                    internalInterleavedLength: intervalsBasedBuffers.recordingLength,
+                    leftBuffers: intervalsBasedBuffers.left,
+                    rightBuffers: numberOfAudioChannels === 1 ? [] : intervalsBasedBuffers.right,
+                },
+                function(buffer, view) {
+                    var blob = new Blob([view], {
+                        type: "audio/wav",
+                    });
+                    config.ondataavailable(blob);
 
-                setTimeout(looper, config.timeSlice);
-            });
+                    setTimeout(looper, config.timeSlice);
+                }
+            );
 
             intervalsBasedBuffers = {
                 left: [],
                 right: [],
-                recordingLength: 0
+                recordingLength: 0,
             };
         } else {
             setTimeout(looper, config.timeSlice);
@@ -3214,7 +3639,7 @@ function StereoAudioRecorder(mediaStream, config) {
     }
 }
 
-if (typeof RecordRTC !== 'undefined') {
+if (typeof RecordRTC !== "undefined") {
     RecordRTC.StereoAudioRecorder = StereoAudioRecorder;
 }
 
@@ -3240,8 +3665,8 @@ if (typeof RecordRTC !== 'undefined') {
  */
 
 function CanvasRecorder(htmlElement, config) {
-    if (typeof html2canvas === 'undefined') {
-        throw 'Please link: https://www.webrtc-experiment.com/screenshot.js';
+    if (typeof html2canvas === "undefined") {
+        throw "Please link: https://www.webrtc-experiment.com/screenshot.js";
     }
 
     config = config || {};
@@ -3251,13 +3676,17 @@ function CanvasRecorder(htmlElement, config) {
 
     // via DetectRTC.js
     var isCanvasSupportsStreamCapturing = false;
-    ['captureStream', 'mozCaptureStream', 'webkitCaptureStream'].forEach(function(item) {
-        if (item in document.createElement('canvas')) {
-            isCanvasSupportsStreamCapturing = true;
+    ["captureStream", "mozCaptureStream", "webkitCaptureStream"].forEach(
+        function(item) {
+            if (item in document.createElement("canvas")) {
+                isCanvasSupportsStreamCapturing = true;
+            }
         }
-    });
+    );
 
-    var _isChrome = (!!window.webkitRTCPeerConnection || !!window.webkitGetUserMedia) && !!window.chrome;
+    var _isChrome =
+        (!!window.webkitRTCPeerConnection || !!window.webkitGetUserMedia) &&
+        !!window.chrome;
 
     var chromeVersion = 50;
     var matchArray = navigator.userAgent.match(/Chrom(e|ium)\/([0-9]+)\./);
@@ -3277,7 +3706,9 @@ function CanvasRecorder(htmlElement, config) {
 
     if (isCanvasSupportsStreamCapturing) {
         if (!config.disableLogs) {
-            console.log('Your browser supports both MediRecorder API and canvas.captureStream!');
+            console.log(
+                "Your browser supports both MediRecorder API and canvas.captureStream!"
+            );
         }
 
         if (htmlElement instanceof HTMLCanvasElement) {
@@ -3285,11 +3716,11 @@ function CanvasRecorder(htmlElement, config) {
         } else if (htmlElement instanceof CanvasRenderingContext2D) {
             globalCanvas = htmlElement.canvas;
         } else {
-            throw 'Please pass either HTMLCanvasElement or CanvasRenderingContext2D.';
+            throw "Please pass either HTMLCanvasElement or CanvasRenderingContext2D.";
         }
     } else if (!!navigator.mozGetUserMedia) {
         if (!config.disableLogs) {
-            console.error('Canvas recording is NOT supported in Firefox.');
+            console.error("Canvas recording is NOT supported in Firefox.");
         }
     }
 
@@ -3308,28 +3739,28 @@ function CanvasRecorder(htmlElement, config) {
         if (isCanvasSupportsStreamCapturing && !config.useWhammyRecorder) {
             // CanvasCaptureMediaStream
             var canvasMediaStream;
-            if ('captureStream' in globalCanvas) {
+            if ("captureStream" in globalCanvas) {
                 canvasMediaStream = globalCanvas.captureStream(25); // 25 FPS
-            } else if ('mozCaptureStream' in globalCanvas) {
+            } else if ("mozCaptureStream" in globalCanvas) {
                 canvasMediaStream = globalCanvas.mozCaptureStream(25);
-            } else if ('webkitCaptureStream' in globalCanvas) {
+            } else if ("webkitCaptureStream" in globalCanvas) {
                 canvasMediaStream = globalCanvas.webkitCaptureStream(25);
             }
 
             try {
                 var mdStream = new MediaStream();
-                mdStream.addTrack(getTracks(canvasMediaStream, 'video')[0]);
+                mdStream.addTrack(getTracks(canvasMediaStream, "video")[0]);
                 canvasMediaStream = mdStream;
             } catch (e) {}
 
             if (!canvasMediaStream) {
-                throw 'captureStream API are NOT available.';
+                throw "captureStream API are NOT available.";
             }
 
-            // Note: Jan 18, 2016 status is that, 
+            // Note: Jan 18, 2016 status is that,
             // Firefox MediaRecorder API can't record CanvasCaptureMediaStream object.
             mediaStreamRecorder = new MediaStreamRecorder(canvasMediaStream, {
-                mimeType: config.mimeType || 'video/webm'
+                mimeType: config.mimeType || "video/webm",
             });
             mediaStreamRecorder.record();
         } else {
@@ -3344,7 +3775,7 @@ function CanvasRecorder(htmlElement, config) {
     };
 
     this.getWebPImages = function(callback) {
-        if (htmlElement.nodeName.toLowerCase() !== 'canvas') {
+        if (htmlElement.nodeName.toLowerCase() !== "canvas") {
             callback();
             return;
         }
@@ -3353,19 +3784,19 @@ function CanvasRecorder(htmlElement, config) {
         whammy.frames.forEach(function(frame, idx) {
             var framesRemaining = framesLength - idx;
             if (!config.disableLogs) {
-                console.log(framesRemaining + '/' + framesLength + ' frames remaining');
+                console.log(framesRemaining + "/" + framesLength + " frames remaining");
             }
 
             if (config.onEncodingCallback) {
                 config.onEncodingCallback(framesRemaining, framesLength);
             }
 
-            var webp = frame.image.toDataURL('image/webp', 1);
+            var webp = frame.image.toDataURL("image/webp", 1);
             whammy.frames[idx].image = webp;
         });
 
         if (!config.disableLogs) {
-            console.log('Generating WebM');
+            console.log("Generating WebM");
         }
 
         callback();
@@ -3402,14 +3833,14 @@ function CanvasRecorder(htmlElement, config) {
              */
             whammy.compile(function(blob) {
                 if (!config.disableLogs) {
-                    console.log('Recording finished!');
+                    console.log("Recording finished!");
                 }
 
                 that.blob = blob;
 
                 if (that.blob.forEach) {
                     that.blob = new Blob([], {
-                        type: 'video/webm'
+                        type: "video/webm",
                     });
                 }
 
@@ -3481,15 +3912,15 @@ function CanvasRecorder(htmlElement, config) {
     }
 
     // for debugging
-    this.name = 'CanvasRecorder';
+    this.name = "CanvasRecorder";
     this.toString = function() {
         return this.name;
     };
 
     function cloneCanvas() {
         //create a new canvas
-        var newCanvas = document.createElement('canvas');
-        var context = newCanvas.getContext('2d');
+        var newCanvas = document.createElement("canvas");
+        var context = newCanvas.getContext("2d");
 
         //set dimensions
         newCanvas.width = htmlElement.width;
@@ -3508,14 +3939,14 @@ function CanvasRecorder(htmlElement, config) {
             return setTimeout(drawCanvasFrame, 500);
         }
 
-        if (htmlElement.nodeName.toLowerCase() === 'canvas') {
+        if (htmlElement.nodeName.toLowerCase() === "canvas") {
             var duration = new Date().getTime() - lastTime;
             // via #206, by Jack i.e. @Seymourr
             lastTime = new Date().getTime();
 
             whammy.frames.push({
                 image: cloneCanvas(),
-                duration: duration
+                duration: duration,
             });
 
             if (isRecording) {
@@ -3525,7 +3956,8 @@ function CanvasRecorder(htmlElement, config) {
         }
 
         html2canvas(htmlElement, {
-            grabMouse: typeof config.showMousePointer === 'undefined' || config.showMousePointer,
+            grabMouse: typeof config.showMousePointer === "undefined" ||
+                config.showMousePointer,
             onrendered: function(canvas) {
                 var duration = new Date().getTime() - lastTime;
                 if (!duration) {
@@ -3536,14 +3968,14 @@ function CanvasRecorder(htmlElement, config) {
                 lastTime = new Date().getTime();
 
                 whammy.frames.push({
-                    image: canvas.toDataURL('image/webp', 1),
-                    duration: duration
+                    image: canvas.toDataURL("image/webp", 1),
+                    duration: duration,
                 });
 
                 if (isRecording) {
                     setTimeout(drawCanvasFrame, config.frameInterval);
                 }
-            }
+            },
         });
     }
 
@@ -3552,7 +3984,7 @@ function CanvasRecorder(htmlElement, config) {
     var whammy = new Whammy.Video(100);
 }
 
-if (typeof RecordRTC !== 'undefined') {
+if (typeof RecordRTC !== "undefined") {
     RecordRTC.CanvasRecorder = CanvasRecorder;
 }
 
@@ -3578,7 +4010,6 @@ if (typeof RecordRTC !== 'undefined') {
  */
 
 function WhammyRecorder(mediaStream, config) {
-
     config = config || {};
 
     if (!config.frameInterval) {
@@ -3586,7 +4017,7 @@ function WhammyRecorder(mediaStream, config) {
     }
 
     if (!config.disableLogs) {
-        console.log('Using frames-interval:', config.frameInterval);
+        console.log("Using frames-interval:", config.frameInterval);
     }
 
     /**
@@ -3608,21 +4039,21 @@ function WhammyRecorder(mediaStream, config) {
         if (!config.video) {
             config.video = {
                 width: config.width,
-                height: config.height
+                height: config.height,
             };
         }
 
         if (!config.canvas) {
             config.canvas = {
                 width: config.width,
-                height: config.height
+                height: config.height,
             };
         }
 
         canvas.width = config.canvas.width || 320;
         canvas.height = config.canvas.height || 240;
 
-        context = canvas.getContext('2d');
+        context = canvas.getContext("2d");
 
         // setting defaults
         if (config.video && config.video instanceof HTMLVideoElement) {
@@ -3632,11 +4063,12 @@ function WhammyRecorder(mediaStream, config) {
                 config.initCallback();
             }
         } else {
-            video = document.createElement('video');
+            video = document.createElement("video");
 
             setSrcObject(mediaStream, video);
 
-            video.onloadedmetadata = function() { // "onloadedmetadata" may NOT work in FF?
+            video.onloadedmetadata = function() {
+                // "onloadedmetadata" may NOT work in FF?
                 if (config.initCallback) {
                     config.initCallback();
                 }
@@ -3653,8 +4085,13 @@ function WhammyRecorder(mediaStream, config) {
         whammy = new Whammy.Video();
 
         if (!config.disableLogs) {
-            console.log('canvas resolutions', canvas.width, '*', canvas.height);
-            console.log('video width/height', video.width || canvas.width, '*', video.height || canvas.height);
+            console.log("canvas resolutions", canvas.width, "*", canvas.height);
+            console.log(
+                "video width/height",
+                video.width || canvas.width,
+                "*",
+                video.height || canvas.height
+            );
         }
 
         drawFrames(config.frameInterval);
@@ -3665,7 +4102,7 @@ function WhammyRecorder(mediaStream, config) {
      * @param {integer} frameInterval - set minimum interval (in milliseconds) between each time we push a frame to Whammy
      */
     function drawFrames(frameInterval) {
-        frameInterval = typeof frameInterval !== 'undefined' ? frameInterval : 10;
+        frameInterval = typeof frameInterval !== "undefined" ? frameInterval : 10;
 
         var duration = new Date().getTime() - lastTime;
         if (!duration) {
@@ -3689,7 +4126,7 @@ function WhammyRecorder(mediaStream, config) {
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
         whammy.frames.push({
             duration: duration,
-            image: canvas.toDataURL('image/webp')
+            image: canvas.toDataURL("image/webp"),
         });
 
         if (!isStopDrawing) {
@@ -3715,7 +4152,6 @@ function WhammyRecorder(mediaStream, config) {
         })();
     }
 
-
     /**
      * remove black frames from the beginning to the specified frame
      * @param {Array} _frames - array of frames to be checked
@@ -3725,28 +4161,40 @@ function WhammyRecorder(mediaStream, config) {
      * @returns {Array} - array of frames
      */
     // pull#293 by @volodalexey
-    function dropBlackFrames(_frames, _framesToCheck, _pixTolerance, _frameTolerance, callback) {
-        var localCanvas = document.createElement('canvas');
+    function dropBlackFrames(
+        _frames,
+        _framesToCheck,
+        _pixTolerance,
+        _frameTolerance,
+        callback
+    ) {
+        var localCanvas = document.createElement("canvas");
         localCanvas.width = canvas.width;
         localCanvas.height = canvas.height;
-        var context2d = localCanvas.getContext('2d');
+        var context2d = localCanvas.getContext("2d");
         var resultFrames = [];
 
         var checkUntilNotBlack = _framesToCheck === -1;
-        var endCheckFrame = (_framesToCheck && _framesToCheck > 0 && _framesToCheck <= _frames.length) ?
-            _framesToCheck : _frames.length;
+        var endCheckFrame =
+            _framesToCheck && _framesToCheck > 0 && _framesToCheck <= _frames.length ?
+            _framesToCheck :
+            _frames.length;
         var sampleColor = {
             r: 0,
             g: 0,
-            b: 0
+            b: 0,
         };
         var maxColorDifference = Math.sqrt(
-            Math.pow(255, 2) +
-            Math.pow(255, 2) +
-            Math.pow(255, 2)
+            Math.pow(255, 2) + Math.pow(255, 2) + Math.pow(255, 2)
         );
-        var pixTolerance = _pixTolerance && _pixTolerance >= 0 && _pixTolerance <= 1 ? _pixTolerance : 0;
-        var frameTolerance = _frameTolerance && _frameTolerance >= 0 && _frameTolerance <= 1 ? _frameTolerance : 0;
+        var pixTolerance =
+            _pixTolerance && _pixTolerance >= 0 && _pixTolerance <= 1 ?
+            _pixTolerance :
+            0;
+        var frameTolerance =
+            _frameTolerance && _frameTolerance >= 0 && _frameTolerance <= 1 ?
+            _frameTolerance :
+            0;
         var doNotCheckNext = false;
 
         asyncLoop({
@@ -3755,7 +4203,10 @@ function WhammyRecorder(mediaStream, config) {
                 var matchPixCount, endPixCheck, maxPixCount;
 
                 var finishImage = function() {
-                    if (!doNotCheckNext && maxPixCount - matchPixCount <= maxPixCount * frameTolerance) {
+                    if (
+                        !doNotCheckNext &&
+                        maxPixCount - matchPixCount <= maxPixCount * frameTolerance
+                    ) {
                         // console.log('removed black frame : ' + f + ' ; frame duration ' + _frames[f].duration);
                     } else {
                         // console.log('frame is passed : ' + f);
@@ -3771,7 +4222,12 @@ function WhammyRecorder(mediaStream, config) {
                     var image = new Image();
                     image.onload = function() {
                         context2d.drawImage(image, 0, 0, canvas.width, canvas.height);
-                        var imageData = context2d.getImageData(0, 0, canvas.width, canvas.height);
+                        var imageData = context2d.getImageData(
+                            0,
+                            0,
+                            canvas.width,
+                            canvas.height
+                        );
                         matchPixCount = 0;
                         endPixCheck = imageData.data.length;
                         maxPixCount = imageData.data.length / 4;
@@ -3780,7 +4236,7 @@ function WhammyRecorder(mediaStream, config) {
                             var currentColor = {
                                 r: imageData.data[pix],
                                 g: imageData.data[pix + 1],
-                                b: imageData.data[pix + 2]
+                                b: imageData.data[pix + 2],
                             };
                             var colorDifference = Math.sqrt(
                                 Math.pow(currentColor.r - sampleColor.r, 2) +
@@ -3808,7 +4264,7 @@ function WhammyRecorder(mediaStream, config) {
                     resultFrames.push(_frames[_frames.length - 1]);
                 }
                 callback(resultFrames);
-            }
+            },
         });
     }
 
@@ -3856,7 +4312,7 @@ function WhammyRecorder(mediaStream, config) {
 
                     if (_this.blob.forEach) {
                         _this.blob = new Blob([], {
-                            type: 'video/webm'
+                            type: "video/webm",
                         });
                     }
 
@@ -3917,20 +4373,20 @@ function WhammyRecorder(mediaStream, config) {
     }
 
     // for debugging
-    this.name = 'WhammyRecorder';
+    this.name = "WhammyRecorder";
     this.toString = function() {
         return this.name;
     };
 
-    var canvas = document.createElement('canvas');
-    var context = canvas.getContext('2d');
+    var canvas = document.createElement("canvas");
+    var context = canvas.getContext("2d");
 
     var video;
     var lastTime;
     var whammy;
 }
 
-if (typeof RecordRTC !== 'undefined') {
+if (typeof RecordRTC !== "undefined") {
     RecordRTC.WhammyRecorder = WhammyRecorder;
 }
 
@@ -3976,29 +4432,37 @@ var Whammy = (function() {
      * @param {number} duration - Stick a duration (in milliseconds)
      */
     WhammyVideo.prototype.add = function(frame, duration) {
-        if ('canvas' in frame) { //CanvasRenderingContext2D
+        if ("canvas" in frame) {
+            //CanvasRenderingContext2D
             frame = frame.canvas;
         }
 
-        if ('toDataURL' in frame) {
-            frame = frame.toDataURL('image/webp', this.quality);
+        if ("toDataURL" in frame) {
+            frame = frame.toDataURL("image/webp", this.quality);
         }
 
-        if (!(/^data:image\/webp;base64,/ig).test(frame)) {
-            throw 'Input must be formatted properly as a base64 encoded DataURI of type image/webp';
+        if (!/^data:image\/webp;base64,/gi.test(frame)) {
+            throw "Input must be formatted properly as a base64 encoded DataURI of type image/webp";
         }
         this.frames.push({
             image: frame,
-            duration: duration || this.duration
+            duration: duration || this.duration,
         });
     };
 
     function processInWebWorker(_function) {
-        var blob = URL.createObjectURL(new Blob([_function.toString(),
-            'this.onmessage =  function (eee) {' + _function.name + '(eee.data);}'
-        ], {
-            type: 'application/javascript'
-        }));
+        var blob = URL.createObjectURL(
+            new Blob(
+                [
+                    _function.toString(),
+                    "this.onmessage =  function (eee) {" +
+                    _function.name +
+                    "(eee.data);}",
+                ], {
+                    type: "application/javascript",
+                }
+            )
+        );
 
         var worker = new Worker(blob);
         URL.revokeObjectURL(blob);
@@ -4015,102 +4479,129 @@ var Whammy = (function() {
             var clusterMaxDuration = 30000;
 
             var EBML = [{
-                'id': 0x1a45dfa3, // EBML
-                'data': [{
-                    'data': 1,
-                    'id': 0x4286 // EBMLVersion
-                }, {
-                    'data': 1,
-                    'id': 0x42f7 // EBMLReadVersion
-                }, {
-                    'data': 4,
-                    'id': 0x42f2 // EBMLMaxIDLength
-                }, {
-                    'data': 8,
-                    'id': 0x42f3 // EBMLMaxSizeLength
-                }, {
-                    'data': 'webm',
-                    'id': 0x4282 // DocType
-                }, {
-                    'data': 2,
-                    'id': 0x4287 // DocTypeVersion
-                }, {
-                    'data': 2,
-                    'id': 0x4285 // DocTypeReadVersion
-                }]
-            }, {
-                'id': 0x18538067, // Segment
-                'data': [{
-                    'id': 0x1549a966, // Info
-                    'data': [{
-                        'data': 1e6, //do things in millisecs (num of nanosecs for duration scale)
-                        'id': 0x2ad7b1 // TimecodeScale
-                    }, {
-                        'data': 'whammy',
-                        'id': 0x4d80 // MuxingApp
-                    }, {
-                        'data': 'whammy',
-                        'id': 0x5741 // WritingApp
-                    }, {
-                        'data': doubleToString(info.duration),
-                        'id': 0x4489 // Duration
-                    }]
-                }, {
-                    'id': 0x1654ae6b, // Tracks
-                    'data': [{
-                        'id': 0xae, // TrackEntry
-                        'data': [{
-                            'data': 1,
-                            'id': 0xd7 // TrackNumber
-                        }, {
-                            'data': 1,
-                            'id': 0x73c5 // TrackUID
-                        }, {
-                            'data': 0,
-                            'id': 0x9c // FlagLacing
-                        }, {
-                            'data': 'und',
-                            'id': 0x22b59c // Language
-                        }, {
-                            'data': 'V_VP8',
-                            'id': 0x86 // CodecID
-                        }, {
-                            'data': 'VP8',
-                            'id': 0x258688 // CodecName
-                        }, {
-                            'data': 1,
-                            'id': 0x83 // TrackType
-                        }, {
-                            'id': 0xe0, // Video
-                            'data': [{
-                                'data': info.width,
-                                'id': 0xb0 // PixelWidth
-                            }, {
-                                'data': info.height,
-                                'id': 0xba // PixelHeight
-                            }]
-                        }]
-                    }]
-                }]
-            }];
+                    id: 0x1a45dfa3, // EBML
+                    data: [{
+                            data: 1,
+                            id: 0x4286, // EBMLVersion
+                        },
+                        {
+                            data: 1,
+                            id: 0x42f7, // EBMLReadVersion
+                        },
+                        {
+                            data: 4,
+                            id: 0x42f2, // EBMLMaxIDLength
+                        },
+                        {
+                            data: 8,
+                            id: 0x42f3, // EBMLMaxSizeLength
+                        },
+                        {
+                            data: "webm",
+                            id: 0x4282, // DocType
+                        },
+                        {
+                            data: 2,
+                            id: 0x4287, // DocTypeVersion
+                        },
+                        {
+                            data: 2,
+                            id: 0x4285, // DocTypeReadVersion
+                        },
+                    ],
+                },
+                {
+                    id: 0x18538067, // Segment
+                    data: [{
+                            id: 0x1549a966, // Info
+                            data: [{
+                                    data: 1e6, //do things in millisecs (num of nanosecs for duration scale)
+                                    id: 0x2ad7b1, // TimecodeScale
+                                },
+                                {
+                                    data: "whammy",
+                                    id: 0x4d80, // MuxingApp
+                                },
+                                {
+                                    data: "whammy",
+                                    id: 0x5741, // WritingApp
+                                },
+                                {
+                                    data: doubleToString(info.duration),
+                                    id: 0x4489, // Duration
+                                },
+                            ],
+                        },
+                        {
+                            id: 0x1654ae6b, // Tracks
+                            data: [{
+                                id: 0xae, // TrackEntry
+                                data: [{
+                                        data: 1,
+                                        id: 0xd7, // TrackNumber
+                                    },
+                                    {
+                                        data: 1,
+                                        id: 0x73c5, // TrackUID
+                                    },
+                                    {
+                                        data: 0,
+                                        id: 0x9c, // FlagLacing
+                                    },
+                                    {
+                                        data: "und",
+                                        id: 0x22b59c, // Language
+                                    },
+                                    {
+                                        data: "V_VP8",
+                                        id: 0x86, // CodecID
+                                    },
+                                    {
+                                        data: "VP8",
+                                        id: 0x258688, // CodecName
+                                    },
+                                    {
+                                        data: 1,
+                                        id: 0x83, // TrackType
+                                    },
+                                    {
+                                        id: 0xe0, // Video
+                                        data: [{
+                                                data: info.width,
+                                                id: 0xb0, // PixelWidth
+                                            },
+                                            {
+                                                data: info.height,
+                                                id: 0xba, // PixelHeight
+                                            },
+                                        ],
+                                    },
+                                ],
+                            }, ],
+                        },
+                    ],
+                },
+            ];
 
             //Generate clusters (max duration)
             var frameNumber = 0;
             var clusterTimecode = 0;
             while (frameNumber < frames.length) {
-
                 var clusterFrames = [];
                 var clusterDuration = 0;
                 do {
                     clusterFrames.push(frames[frameNumber]);
                     clusterDuration += frames[frameNumber].duration;
                     frameNumber++;
-                } while (frameNumber < frames.length && clusterDuration < clusterMaxDuration);
+                } while (
+                    frameNumber < frames.length &&
+                    clusterDuration < clusterMaxDuration
+                );
 
                 var clusterCounter = 0;
                 var cluster = {
-                    'id': 0x1f43b675, // Cluster
-                    'data': getClusterData(clusterTimecode, clusterCounter, clusterFrames)
+                    id: 0x1f43b675, // Cluster
+                    data: getClusterData(clusterTimecode, clusterCounter, clusterFrames),
                 }; //Add cluster to segment
                 EBML[1].data.push(cluster);
                 clusterTimecode += clusterDuration;
@@ -4121,24 +4612,26 @@ var Whammy = (function() {
 
         function getClusterData(clusterTimecode, clusterCounter, clusterFrames) {
             return [{
-                'data': clusterTimecode,
-                'id': 0xe7 // Timecode
-            }].concat(clusterFrames.map(function(webp) {
-                var block = makeSimpleBlock({
-                    discardable: 0,
-                    frame: webp.data.slice(4),
-                    invisible: 0,
-                    keyframe: 1,
-                    lacing: 0,
-                    trackNum: 1,
-                    timecode: Math.round(clusterCounter)
-                });
-                clusterCounter += webp.duration;
-                return {
-                    data: block,
-                    id: 0xa3
-                };
-            }));
+                data: clusterTimecode,
+                id: 0xe7, // Timecode
+            }, ].concat(
+                clusterFrames.map(function(webp) {
+                    var block = makeSimpleBlock({
+                        discardable: 0,
+                        frame: webp.data.slice(4),
+                        invisible: 0,
+                        keyframe: 1,
+                        lacing: 0,
+                        trackNum: 1,
+                        timecode: Math.round(clusterCounter),
+                    });
+                    clusterCounter += webp.duration;
+                    return {
+                        data: block,
+                        id: 0xa3,
+                    };
+                })
+            );
         }
 
         // sums the lengths of all the frames and gets the duration
@@ -4146,7 +4639,7 @@ var Whammy = (function() {
         function checkFrames(frames) {
             if (!frames[0]) {
                 postMessage({
-                    error: 'Something went wrong. Maybe WebP format is not supported in the current browser.'
+                    error: "Something went wrong. Maybe WebP format is not supported in the current browser.",
                 });
                 return;
             }
@@ -4161,7 +4654,7 @@ var Whammy = (function() {
             return {
                 duration: duration,
                 width: width,
-                height: height
+                height: height,
             };
         }
 
@@ -4175,14 +4668,17 @@ var Whammy = (function() {
         }
 
         function strToBuffer(str) {
-            return new Uint8Array(str.split('').map(function(e) {
-                return e.charCodeAt(0);
-            }));
+            return new Uint8Array(
+                str.split("").map(function(e) {
+                    return e.charCodeAt(0);
+                })
+            );
         }
 
         function bitsToBuffer(bits) {
             var data = [];
-            var pad = (bits.length % 8) ? (new Array(1 + 8 - (bits.length % 8))).join('0') : '';
+            var pad =
+                bits.length % 8 ? new Array(1 + 8 - (bits.length % 8)).join("0") : "";
             bits = pad + bits;
             for (var i = 0; i < bits.length; i += 8) {
                 data.push(parseInt(bits.substr(i, 8), 2));
@@ -4195,23 +4691,25 @@ var Whammy = (function() {
             for (var i = 0; i < json.length; i++) {
                 var data = json[i].data;
 
-                if (typeof data === 'object') {
+                if (typeof data === "object") {
                     data = generateEBML(data);
                 }
 
-                if (typeof data === 'number') {
+                if (typeof data === "number") {
                     data = bitsToBuffer(data.toString(2));
                 }
 
-                if (typeof data === 'string') {
+                if (typeof data === "string") {
                     data = strToBuffer(data);
                 }
 
                 var len = data.size || data.byteLength || data.length;
                 var zeroes = Math.ceil(Math.ceil(Math.log(len) / Math.log(2)) / 8);
                 var sizeToString = len.toString(2);
-                var padded = (new Array((zeroes * 7 + 7 + 1) - sizeToString.length)).join('0') + sizeToString;
-                var size = (new Array(zeroes)).join('0') + '1' + padded;
+                var padded =
+                    new Array(zeroes * 7 + 7 + 1 - sizeToString.length).join("0") +
+                    sizeToString;
+                var size = new Array(zeroes).join("0") + "1" + padded;
 
                 ebml.push(numToBuffer(json[i].id));
                 ebml.push(bitsToBuffer(size));
@@ -4219,13 +4717,14 @@ var Whammy = (function() {
             }
 
             return new Blob(ebml, {
-                type: 'video/webm'
+                type: "video/webm",
             });
         }
 
         function toBinStrOld(bits) {
-            var data = '';
-            var pad = (bits.length % 8) ? (new Array(1 + 8 - (bits.length % 8))).join('0') : '';
+            var data = "";
+            var pad =
+                bits.length % 8 ? new Array(1 + 8 - (bits.length % 8)).join("0") : "";
             bits = pad + bits;
             for (var i = 0; i < bits.length; i += 8) {
                 data += String.fromCharCode(parseInt(bits.substr(i, 8), 2));
@@ -4245,7 +4744,7 @@ var Whammy = (function() {
             }
 
             if (data.lacing) {
-                flags |= (data.lacing << 1);
+                flags |= data.lacing << 1;
             }
 
             if (data.discardable) {
@@ -4253,12 +4752,14 @@ var Whammy = (function() {
             }
 
             if (data.trackNum > 127) {
-                throw 'TrackNumber > 127 not supported';
+                throw "TrackNumber > 127 not supported";
             }
 
-            var out = [data.trackNum | 0x80, data.timecode >> 8, data.timecode & 0xff, flags].map(function(e) {
-                return String.fromCharCode(e);
-            }).join('') + data.frame;
+            var out = [data.trackNum | 0x80, data.timecode >> 8, data.timecode & 0xff, flags]
+                .map(function(e) {
+                    return String.fromCharCode(e);
+                })
+                .join("") + data.frame;
 
             return out;
         }
@@ -4266,7 +4767,7 @@ var Whammy = (function() {
         function parseWebP(riff) {
             var VP8 = riff.RIFF[0].WEBP[0];
 
-            var frameStart = VP8.indexOf('\x9d\x01\x2a'); // A VP8 keyframe starts with the 0x9d012a header
+            var frameStart = VP8.indexOf("\x9d\x01\x2a"); // A VP8 keyframe starts with the 0x9d012a header
             for (var i = 0, c = []; i < 4; i++) {
                 c[i] = VP8.charCodeAt(frameStart + 3 + i);
             }
@@ -4275,22 +4776,29 @@ var Whammy = (function() {
 
             //the code below is literally copied verbatim from the bitstream spec
             tmp = (c[1] << 8) | c[0];
-            width = tmp & 0x3FFF;
+            width = tmp & 0x3fff;
             tmp = (c[3] << 8) | c[2];
-            height = tmp & 0x3FFF;
+            height = tmp & 0x3fff;
             return {
                 width: width,
                 height: height,
                 data: VP8,
-                riff: riff
+                riff: riff,
             };
         }
 
         function getStrLength(string, offset) {
-            return parseInt(string.substr(offset + 4, 4).split('').map(function(i) {
-                var unpadded = i.charCodeAt(0).toString(2);
-                return (new Array(8 - unpadded.length + 1)).join('0') + unpadded;
-            }).join(''), 2);
+            return parseInt(
+                string
+                .substr(offset + 4, 4)
+                .split("")
+                .map(function(i) {
+                    var unpadded = i.charCodeAt(0).toString(2);
+                    return new Array(8 - unpadded.length + 1).join("0") + unpadded;
+                })
+                .join(""),
+                2
+            );
         }
 
         function parseRIFF(string) {
@@ -4304,7 +4812,7 @@ var Whammy = (function() {
                 offset += 4 + 4 + len;
                 chunks[id] = chunks[id] || [];
 
-                if (id === 'RIFF' || id === 'LIST') {
+                if (id === "RIFF" || id === "LIST") {
                     chunks[id].push(parseRIFF(data));
                 } else {
                     chunks[id].push(data);
@@ -4314,17 +4822,22 @@ var Whammy = (function() {
         }
 
         function doubleToString(num) {
-            return [].slice.call(
-                new Uint8Array((new Float64Array([num])).buffer), 0).map(function(e) {
-                return String.fromCharCode(e);
-            }).reverse().join('');
+            return [].slice
+                .call(new Uint8Array(new Float64Array([num]).buffer), 0)
+                .map(function(e) {
+                    return String.fromCharCode(e);
+                })
+                .reverse()
+                .join("");
         }
 
-        var webm = new ArrayToWebM(frames.map(function(frame) {
-            var webp = parseWebP(parseRIFF(atob(frame.image.slice(23))));
-            webp.duration = frame.duration;
-            return webp;
-        }));
+        var webm = new ArrayToWebM(
+            frames.map(function(frame) {
+                var webp = parseWebP(parseRIFF(atob(frame.image.slice(23))));
+                webp.duration = frame.duration;
+                return webp;
+            })
+        );
 
         postMessage(webm);
     }
@@ -4364,11 +4877,11 @@ var Whammy = (function() {
          * @param {?number} speed - 0.8
          * @param {?number} quality - 100
          */
-        Video: WhammyVideo
+        Video: WhammyVideo,
     };
 })();
 
-if (typeof RecordRTC !== 'undefined') {
+if (typeof RecordRTC !== "undefined") {
     RecordRTC.Whammy = Whammy;
 }
 
@@ -4401,7 +4914,6 @@ if (typeof RecordRTC !== 'undefined') {
  * @see {@link https://github.com/muaz-khan/RecordRTC|RecordRTC Source Code}
  */
 
-
 var DiskStorage = {
     /**
      * This method must be called once to initialize IndexedDB ObjectStore. Though, it is auto-used internally.
@@ -4414,13 +4926,16 @@ var DiskStorage = {
     init: function() {
         var self = this;
 
-        if (typeof indexedDB === 'undefined' || typeof indexedDB.open === 'undefined') {
-            console.error('IndexedDB API are not available in this browser.');
+        if (
+            typeof indexedDB === "undefined" ||
+            typeof indexedDB.open === "undefined"
+        ) {
+            console.error("IndexedDB API are not available in this browser.");
             return;
         }
 
         var dbVersion = 1;
-        var dbName = this.dbName || location.href.replace(/\/|:|#|%|\.|\[|\]/g, ''),
+        var dbName = this.dbName || location.href.replace(/\/|:|#|%|\.|\[|\]/g, ""),
             db;
         var request = indexedDB.open(dbName, dbVersion);
 
@@ -4429,31 +4944,38 @@ var DiskStorage = {
         }
 
         function putInDB() {
-            var transaction = db.transaction([self.dataStoreName], 'readwrite');
+            var transaction = db.transaction([self.dataStoreName], "readwrite");
 
             if (self.videoBlob) {
-                transaction.objectStore(self.dataStoreName).put(self.videoBlob, 'videoBlob');
+                transaction
+                    .objectStore(self.dataStoreName)
+                    .put(self.videoBlob, "videoBlob");
             }
 
             if (self.gifBlob) {
-                transaction.objectStore(self.dataStoreName).put(self.gifBlob, 'gifBlob');
+                transaction
+                    .objectStore(self.dataStoreName)
+                    .put(self.gifBlob, "gifBlob");
             }
 
             if (self.audioBlob) {
-                transaction.objectStore(self.dataStoreName).put(self.audioBlob, 'audioBlob');
+                transaction
+                    .objectStore(self.dataStoreName)
+                    .put(self.audioBlob, "audioBlob");
             }
 
             function getFromStore(portionName) {
-                transaction.objectStore(self.dataStoreName).get(portionName).onsuccess = function(event) {
-                    if (self.callback) {
-                        self.callback(event.target.result, portionName);
-                    }
-                };
+                transaction.objectStore(self.dataStoreName).get(portionName).onsuccess =
+                    function(event) {
+                        if (self.callback) {
+                            self.callback(event.target.result, portionName);
+                        }
+                    };
             }
 
-            getFromStore('audioBlob');
-            getFromStore('videoBlob');
-            getFromStore('gifBlob');
+            getFromStore("audioBlob");
+            getFromStore("videoBlob");
+            getFromStore("gifBlob");
         }
 
         request.onerror = self.onError;
@@ -4530,7 +5052,7 @@ var DiskStorage = {
      * };
      */
     onError: function(error) {
-        console.error(JSON.stringify(error, null, '\t'));
+        console.error(JSON.stringify(error, null, "\t"));
     },
 
     /**
@@ -4540,11 +5062,11 @@ var DiskStorage = {
      * @example
      * DiskStorage.dataStoreName = 'recordRTC';
      */
-    dataStoreName: 'recordRTC',
-    dbName: null
+    dataStoreName: "recordRTC",
+    dbName: null,
 };
 
-if (typeof RecordRTC !== 'undefined') {
+if (typeof RecordRTC !== "undefined") {
     RecordRTC.DiskStorage = DiskStorage;
 }
 
@@ -4569,13 +5091,17 @@ if (typeof RecordRTC !== 'undefined') {
  */
 
 function GifRecorder(mediaStream, config) {
-    if (typeof GIFEncoder === 'undefined') {
-        throw new Error('Missing https://www.webrtc-experiment.com/gif-recorder.js');
+    if (typeof GIFEncoder === "undefined") {
+        throw new Error(
+            "Missing https://www.webrtc-experiment.com/gif-recorder.js"
+        );
     }
 
     config = config || {};
 
-    var isHTMLObject = mediaStream instanceof CanvasRenderingContext2D || mediaStream instanceof HTMLCanvasElement;
+    var isHTMLObject =
+        mediaStream instanceof CanvasRenderingContext2D ||
+        mediaStream instanceof HTMLCanvasElement;
 
     /**
      * This method records MediaStream.
@@ -4585,7 +5111,7 @@ function GifRecorder(mediaStream, config) {
      * recorder.record();
      */
     this.record = function() {
-        if (typeof GIFEncoder === 'undefined') {
+        if (typeof GIFEncoder === "undefined") {
             setTimeout(self.record, 1000);
             return;
         }
@@ -4607,14 +5133,14 @@ function GifRecorder(mediaStream, config) {
             if (!config.video) {
                 config.video = {
                     width: config.width,
-                    height: config.height
+                    height: config.height,
                 };
             }
 
             if (!config.canvas) {
                 config.canvas = {
                     width: config.width,
-                    height: config.height
+                    height: config.height,
                 };
             }
 
@@ -4628,31 +5154,31 @@ function GifRecorder(mediaStream, config) {
         // external library to record as GIF images
         gifEncoder = new GIFEncoder();
 
-        // void setRepeat(int iter) 
-        // Sets the number of times the set of GIF frames should be played. 
+        // void setRepeat(int iter)
+        // Sets the number of times the set of GIF frames should be played.
         // Default is 1; 0 means play indefinitely.
         gifEncoder.setRepeat(0);
 
-        // void setFrameRate(Number fps) 
-        // Sets frame rate in frames per second. 
+        // void setFrameRate(Number fps)
+        // Sets frame rate in frames per second.
         // Equivalent to setDelay(1000/fps).
         // Using "setDelay" instead of "setFrameRate"
         gifEncoder.setDelay(config.frameRate || 200);
 
-        // void setQuality(int quality) 
-        // Sets quality of color quantization (conversion of images to the 
-        // maximum 256 colors allowed by the GIF specification). 
-        // Lower values (minimum = 1) produce better colors, 
-        // but slow processing significantly. 10 is the default, 
-        // and produces good color mapping at reasonable speeds. 
+        // void setQuality(int quality)
+        // Sets quality of color quantization (conversion of images to the
+        // maximum 256 colors allowed by the GIF specification).
+        // Lower values (minimum = 1) produce better colors,
+        // but slow processing significantly. 10 is the default,
+        // and produces good color mapping at reasonable speeds.
         // Values greater than 20 do not yield significant improvements in speed.
         gifEncoder.setQuality(config.quality || 10);
 
-        // Boolean start() 
+        // Boolean start()
         // This writes the GIF Header and returns false if it fails.
         gifEncoder.start();
 
-        if (typeof config.onGifRecordingStarted === 'function') {
+        if (typeof config.onGifRecordingStarted === "function") {
             config.onGifRecordingStarted();
         }
 
@@ -4691,7 +5217,7 @@ function GifRecorder(mediaStream, config) {
             }
 
             if (config.onGifPreview) {
-                config.onGifPreview(canvas.toDataURL('image/png'));
+                config.onGifPreview(canvas.toDataURL("image/png"));
             }
 
             gifEncoder.addFrame(context);
@@ -4733,7 +5259,7 @@ function GifRecorder(mediaStream, config) {
          * });
          */
         this.blob = new Blob([new Uint8Array(gifEncoder.stream().bin)], {
-            type: 'image/gif'
+            type: "image/gif",
         });
 
         callback(this.blob);
@@ -4785,20 +5311,20 @@ function GifRecorder(mediaStream, config) {
     }
 
     // for debugging
-    this.name = 'GifRecorder';
+    this.name = "GifRecorder";
     this.toString = function() {
         return this.name;
     };
 
-    var canvas = document.createElement('canvas');
-    var context = canvas.getContext('2d');
+    var canvas = document.createElement("canvas");
+    var context = canvas.getContext("2d");
 
     if (isHTMLObject) {
         if (mediaStream instanceof CanvasRenderingContext2D) {
             context = mediaStream;
             canvas = context.canvas;
         } else if (mediaStream instanceof HTMLCanvasElement) {
-            context = mediaStream.getContext('2d');
+            context = mediaStream.getContext("2d");
             canvas = mediaStream;
         }
     }
@@ -4806,7 +5332,7 @@ function GifRecorder(mediaStream, config) {
     var isLoadedMetaData = true;
 
     if (!isHTMLObject) {
-        var video = document.createElement('video');
+        var video = document.createElement("video");
         video.muted = true;
         video.autoplay = true;
         video.playsInline = true;
@@ -4829,7 +5355,7 @@ function GifRecorder(mediaStream, config) {
     var self = this;
 }
 
-if (typeof RecordRTC !== 'undefined') {
+if (typeof RecordRTC !== "undefined") {
     RecordRTC.GifRecorder = GifRecorder;
 }
 
@@ -4846,11 +5372,11 @@ if (typeof RecordRTC !== 'undefined') {
 // --------------------------------------------------
 
 function MultiStreamsMixer(arrayOfMediaStreams, elementClass) {
-
-    var browserFakeUserAgent = 'Fake/5.0 (FakeOS) AppleWebKit/123 (KHTML, like Gecko) Fake/12.3.4567.89 Fake/123.45';
+    var browserFakeUserAgent =
+        "Fake/5.0 (FakeOS) AppleWebKit/123 (KHTML, like Gecko) Fake/12.3.4567.89 Fake/123.45";
 
     (function(that) {
-        if (typeof RecordRTC !== 'undefined') {
+        if (typeof RecordRTC !== "undefined") {
             return;
         }
 
@@ -4858,105 +5384,113 @@ function MultiStreamsMixer(arrayOfMediaStreams, elementClass) {
             return;
         }
 
-        if (typeof window !== 'undefined') {
+        if (typeof window !== "undefined") {
             return;
         }
 
-        if (typeof global === 'undefined') {
+        if (typeof global === "undefined") {
             return;
         }
 
         global.navigator = {
             userAgent: browserFakeUserAgent,
-            getUserMedia: function() {}
+            getUserMedia: function() {},
         };
 
         if (!global.console) {
             global.console = {};
         }
 
-        if (typeof global.console.log === 'undefined' || typeof global.console.error === 'undefined') {
-            global.console.error = global.console.log = global.console.log || function() {
-                console.log(arguments);
-            };
+        if (
+            typeof global.console.log === "undefined" ||
+            typeof global.console.error === "undefined"
+        ) {
+            global.console.error = global.console.log =
+                global.console.log ||
+                function() {
+                    console.log(arguments);
+                };
         }
 
-        if (typeof document === 'undefined') {
+        if (typeof document === "undefined") {
             /*global document:true */
             that.document = {
                 documentElement: {
                     appendChild: function() {
-                        return '';
-                    }
-                }
+                        return "";
+                    },
+                },
             };
 
-            document.createElement = document.captureStream = document.mozCaptureStream = function() {
-                var obj = {
-                    getContext: function() {
-                        return obj;
-                    },
-                    play: function() {},
-                    pause: function() {},
-                    drawImage: function() {},
-                    toDataURL: function() {
-                        return '';
-                    },
-                    style: {}
+            document.createElement =
+                document.captureStream =
+                document.mozCaptureStream =
+                function() {
+                    var obj = {
+                        getContext: function() {
+                            return obj;
+                        },
+                        play: function() {},
+                        pause: function() {},
+                        drawImage: function() {},
+                        toDataURL: function() {
+                            return "";
+                        },
+                        style: {},
+                    };
+                    return obj;
                 };
-                return obj;
-            };
 
             that.HTMLVideoElement = function() {};
         }
 
-        if (typeof location === 'undefined') {
+        if (typeof location === "undefined") {
             /*global location:true */
             that.location = {
-                protocol: 'file:',
-                href: '',
-                hash: ''
+                protocol: "file:",
+                href: "",
+                hash: "",
             };
         }
 
-        if (typeof screen === 'undefined') {
+        if (typeof screen === "undefined") {
             /*global screen:true */
             that.screen = {
                 width: 0,
-                height: 0
+                height: 0,
             };
         }
 
-        if (typeof URL === 'undefined') {
+        if (typeof URL === "undefined") {
             /*global screen:true */
             that.URL = {
                 createObjectURL: function() {
-                    return '';
+                    return "";
                 },
                 revokeObjectURL: function() {
-                    return '';
-                }
+                    return "";
+                },
             };
         }
 
         /*global window:true */
         that.window = global;
-    })(typeof global !== 'undefined' ? global : null);
+    })(typeof global !== "undefined" ? global : null);
 
     // requires: chrome://flags/#enable-experimental-web-platform-features
 
-    elementClass = elementClass || 'multi-streams-mixer';
+    elementClass = elementClass || "multi-streams-mixer";
 
     var videos = [];
     var isStopDrawingFrames = false;
 
-    var canvas = document.createElement('canvas');
-    var context = canvas.getContext('2d');
+    var canvas = document.createElement("canvas");
+    var context = canvas.getContext("2d");
     canvas.style.opacity = 0;
-    canvas.style.position = 'absolute';
+    canvas.style.position = "absolute";
     canvas.style.zIndex = -1;
-    canvas.style.top = '-1000em';
-    canvas.style.left = '-1000em';
+    canvas.style.top = "-1000em";
+    canvas.style.left = "-1000em";
     canvas.className = elementClass;
     (document.body || document.documentElement).appendChild(canvas);
 
@@ -4977,13 +5511,13 @@ function MultiStreamsMixer(arrayOfMediaStreams, elementClass) {
     // WebAudio API representer
     var AudioContext = window.AudioContext;
 
-    if (typeof AudioContext === 'undefined') {
-        if (typeof webkitAudioContext !== 'undefined') {
+    if (typeof AudioContext === "undefined") {
+        if (typeof webkitAudioContext !== "undefined") {
             /*global AudioContext:true */
             AudioContext = webkitAudioContext;
         }
 
-        if (typeof mozAudioContext !== 'undefined') {
+        if (typeof mozAudioContext !== "undefined") {
             /*global AudioContext:true */
             AudioContext = mozAudioContext;
         }
@@ -4992,31 +5526,38 @@ function MultiStreamsMixer(arrayOfMediaStreams, elementClass) {
     /*jshint -W079 */
     var URL = window.URL;
 
-    if (typeof URL === 'undefined' && typeof webkitURL !== 'undefined') {
+    if (typeof URL === "undefined" && typeof webkitURL !== "undefined") {
         /*global URL:true */
         URL = webkitURL;
     }
 
-    if (typeof navigator !== 'undefined' && typeof navigator.getUserMedia === 'undefined') { // maybe window.navigator?
-        if (typeof navigator.webkitGetUserMedia !== 'undefined') {
+    if (
+        typeof navigator !== "undefined" &&
+        typeof navigator.getUserMedia === "undefined"
+    ) {
+        // maybe window.navigator?
+        if (typeof navigator.webkitGetUserMedia !== "undefined") {
             navigator.getUserMedia = navigator.webkitGetUserMedia;
         }
 
-        if (typeof navigator.mozGetUserMedia !== 'undefined') {
+        if (typeof navigator.mozGetUserMedia !== "undefined") {
             navigator.getUserMedia = navigator.mozGetUserMedia;
         }
     }
 
     var MediaStream = window.MediaStream;
 
-    if (typeof MediaStream === 'undefined' && typeof webkitMediaStream !== 'undefined') {
+    if (
+        typeof MediaStream === "undefined" &&
+        typeof webkitMediaStream !== "undefined"
+    ) {
         MediaStream = webkitMediaStream;
     }
 
     /*global MediaStream:true */
-    if (typeof MediaStream !== 'undefined') {
+    if (typeof MediaStream !== "undefined") {
         // override "stop" method for all browsers
-        if (typeof MediaStream.prototype.stop === 'undefined') {
+        if (typeof MediaStream.prototype.stop === "undefined") {
             MediaStream.prototype.stop = function() {
                 this.getTracks().forEach(function(track) {
                     track.stop();
@@ -5027,16 +5568,16 @@ function MultiStreamsMixer(arrayOfMediaStreams, elementClass) {
 
     var Storage = {};
 
-    if (typeof AudioContext !== 'undefined') {
+    if (typeof AudioContext !== "undefined") {
         Storage.AudioContext = AudioContext;
-    } else if (typeof webkitAudioContext !== 'undefined') {
+    } else if (typeof webkitAudioContext !== "undefined") {
         Storage.AudioContext = webkitAudioContext;
     }
 
     function setSrcObject(stream, element) {
-        if ('srcObject' in element) {
+        if ("srcObject" in element) {
             element.srcObject = stream;
-        } else if ('mozSrcObject' in element) {
+        } else if ("mozSrcObject" in element) {
             element.mozSrcObject = stream;
         } else {
             element.srcObject = stream;
@@ -5073,7 +5614,8 @@ function MultiStreamsMixer(arrayOfMediaStreams, elementClass) {
             canvas.width = fullcanvas.stream.width;
             canvas.height = fullcanvas.stream.height;
         } else if (remaining.length) {
-            canvas.width = videosLength > 1 ? remaining[0].width * 2 : remaining[0].width;
+            canvas.width =
+                videosLength > 1 ? remaining[0].width * 2 : remaining[0].width;
 
             var height = 1;
             if (videosLength === 3 || videosLength === 4) {
@@ -5146,25 +5688,25 @@ function MultiStreamsMixer(arrayOfMediaStreams, elementClass) {
             y = video.height * 3;
         }
 
-        if (typeof video.stream.left !== 'undefined') {
+        if (typeof video.stream.left !== "undefined") {
             x = video.stream.left;
         }
 
-        if (typeof video.stream.top !== 'undefined') {
+        if (typeof video.stream.top !== "undefined") {
             y = video.stream.top;
         }
 
-        if (typeof video.stream.width !== 'undefined') {
+        if (typeof video.stream.width !== "undefined") {
             width = video.stream.width;
         }
 
-        if (typeof video.stream.height !== 'undefined') {
+        if (typeof video.stream.height !== "undefined") {
             height = video.stream.height;
         }
 
         context.drawImage(video, x, y, width, height);
 
-        if (typeof video.stream.onRender === 'function') {
+        if (typeof video.stream.onRender === "function") {
             video.stream.onRender(context, x, y, width, height, idx);
         }
     }
@@ -5175,11 +5717,14 @@ function MultiStreamsMixer(arrayOfMediaStreams, elementClass) {
 
         var mixedAudioStream = getMixedAudioStream();
         if (mixedAudioStream) {
-            mixedAudioStream.getTracks().filter(function(t) {
-                return t.kind === 'audio';
-            }).forEach(function(track) {
-                mixedVideoStream.addTrack(track);
-            });
+            mixedAudioStream
+                .getTracks()
+                .filter(function(t) {
+                    return t.kind === "audio";
+                })
+                .forEach(function(track) {
+                    mixedVideoStream.addTrack(track);
+                });
         }
 
         var fullcanvas;
@@ -5201,21 +5746,26 @@ function MultiStreamsMixer(arrayOfMediaStreams, elementClass) {
 
         var capturedStream;
 
-        if ('captureStream' in canvas) {
+        if ("captureStream" in canvas) {
             capturedStream = canvas.captureStream();
-        } else if ('mozCaptureStream' in canvas) {
+        } else if ("mozCaptureStream" in canvas) {
             capturedStream = canvas.mozCaptureStream();
         } else if (!self.disableLogs) {
-            console.error('Upgrade to latest Chrome or otherwise enable this flag: chrome://flags/#enable-experimental-web-platform-features');
+            console.error(
+                "Upgrade to latest Chrome or otherwise enable this flag: chrome://flags/#enable-experimental-web-platform-features"
+            );
         }
 
         var videoStream = new MediaStream();
 
-        capturedStream.getTracks().filter(function(t) {
-            return t.kind === 'video';
-        }).forEach(function(track) {
-            videoStream.addTrack(track);
-        });
+        capturedStream
+            .getTracks()
+            .filter(function(t) {
+                return t.kind === "video";
+            })
+            .forEach(function(track) {
+                videoStream.addTrack(track);
+            });
 
         canvas.stream = videoStream;
 
@@ -5240,9 +5790,11 @@ function MultiStreamsMixer(arrayOfMediaStreams, elementClass) {
 
         var audioTracksLength = 0;
         arrayOfMediaStreams.forEach(function(stream) {
-            if (!stream.getTracks().filter(function(t) {
-                    return t.kind === 'audio';
-                }).length) {
+            if (
+                !stream.getTracks().filter(function(t) {
+                    return t.kind === "audio";
+                }).length
+            ) {
                 return;
             }
 
@@ -5271,7 +5823,7 @@ function MultiStreamsMixer(arrayOfMediaStreams, elementClass) {
     }
 
     function getVideo(stream) {
-        var video = document.createElement('video');
+        var video = document.createElement("video");
 
         setSrcObject(stream, video);
 
@@ -5290,7 +5842,7 @@ function MultiStreamsMixer(arrayOfMediaStreams, elementClass) {
 
     this.appendStreams = function(streams) {
         if (!streams) {
-            throw 'First parameter is required.';
+            throw "First parameter is required.";
         }
 
         if (!(streams instanceof Array)) {
@@ -5300,28 +5852,37 @@ function MultiStreamsMixer(arrayOfMediaStreams, elementClass) {
         streams.forEach(function(stream) {
             var newStream = new MediaStream();
 
-            if (stream.getTracks().filter(function(t) {
-                    return t.kind === 'video';
-                }).length) {
+            if (
+                stream.getTracks().filter(function(t) {
+                    return t.kind === "video";
+                }).length
+            ) {
                 var video = getVideo(stream);
                 video.stream = stream;
                 videos.push(video);
 
-                newStream.addTrack(stream.getTracks().filter(function(t) {
-                    return t.kind === 'video';
-                })[0]);
+                newStream.addTrack(
+                    stream.getTracks().filter(function(t) {
+                        return t.kind === "video";
+                    })[0]
+                );
             }
 
-            if (stream.getTracks().filter(function(t) {
-                    return t.kind === 'audio';
-                }).length) {
+            if (
+                stream.getTracks().filter(function(t) {
+                    return t.kind === "audio";
+                }).length
+            ) {
                 var audioSource = self.audioContext.createMediaStreamSource(stream);
-                self.audioDestination = self.audioContext.createMediaStreamDestination();
+                self.audioDestination =
+                    self.audioContext.createMediaStreamDestination();
                 audioSource.connect(self.audioDestination);
 
-                newStream.addTrack(self.audioDestination.stream.getTracks().filter(function(t) {
-                    return t.kind === 'audio';
-                })[0]);
+                newStream.addTrack(
+                    self.audioDestination.stream.getTracks().filter(function(t) {
+                        return t.kind === "audio";
+                    })[0]
+                );
             }
 
             arrayOfMediaStreams.push(newStream);
@@ -5377,9 +5938,11 @@ function MultiStreamsMixer(arrayOfMediaStreams, elementClass) {
 
         // via: @adrian-ber
         streams.forEach(function(stream) {
-            if (!stream.getTracks().filter(function(t) {
-                    return t.kind === 'video';
-                }).length) {
+            if (
+                !stream.getTracks().filter(function(t) {
+                    return t.kind === "video";
+                }).length
+            ) {
                 return;
             }
 
@@ -5390,22 +5953,21 @@ function MultiStreamsMixer(arrayOfMediaStreams, elementClass) {
     }
 
     // for debugging
-    this.name = 'MultiStreamsMixer';
+    this.name = "MultiStreamsMixer";
     this.toString = function() {
         return this.name;
     };
 
     this.getMixedStream = getMixedStream;
-
 }
 
-if (typeof RecordRTC === 'undefined') {
-    if (typeof module !== 'undefined' /* && !!module.exports*/ ) {
+if (typeof RecordRTC === "undefined") {
+    if (typeof module !== "undefined" /* && !!module.exports*/ ) {
         module.exports = MultiStreamsMixer;
     }
 
-    if (typeof define === 'function' && define.amd) {
-        define('MultiStreamsMixer', [], function() {
+    if (typeof define === "function" && define.amd) {
+        define("MultiStreamsMixer", [], function() {
             return MultiStreamsMixer;
         });
     }
@@ -5450,12 +6012,12 @@ function MultiStreamRecorder(arrayOfMediaStreams, options) {
     var mediaRecorder;
 
     options = options || {
-        elementClass: 'multi-streams-mixer',
-        mimeType: 'video/webm',
+        elementClass: "multi-streams-mixer",
+        mimeType: "video/webm",
         video: {
             width: 360,
-            height: 240
-        }
+            height: 240,
+        },
     };
 
     if (!options.frameInterval) {
@@ -5483,7 +6045,10 @@ function MultiStreamRecorder(arrayOfMediaStreams, options) {
      */
     this.record = function() {
         // github/muaz-khan/MultiStreamsMixer
-        mixer = new MultiStreamsMixer(arrayOfMediaStreams, options.elementClass || 'multi-streams-mixer');
+        mixer = new MultiStreamsMixer(
+            arrayOfMediaStreams,
+            options.elementClass || "multi-streams-mixer"
+        );
 
         if (getAllVideoTracks().length) {
             mixer.frameInterval = options.frameInterval || 10;
@@ -5492,7 +6057,7 @@ function MultiStreamRecorder(arrayOfMediaStreams, options) {
             mixer.startDrawingFrames();
         }
 
-        if (options.previewStream && typeof options.previewStream === 'function') {
+        if (options.previewStream && typeof options.previewStream === "function") {
             options.previewStream(mixer.getMixedStream());
         }
 
@@ -5504,7 +6069,7 @@ function MultiStreamRecorder(arrayOfMediaStreams, options) {
     function getAllVideoTracks() {
         var tracks = [];
         arrayOfMediaStreams.forEach(function(stream) {
-            getTracks(stream, 'video').forEach(function(track) {
+            getTracks(stream, "video").forEach(function(track) {
                 tracks.push(track);
             });
         });
@@ -5590,7 +6155,7 @@ function MultiStreamRecorder(arrayOfMediaStreams, options) {
      */
     this.addStreams = function(streams) {
         if (!streams) {
-            throw 'First parameter is required.';
+            throw "First parameter is required.";
         }
 
         if (!(streams instanceof Array)) {
@@ -5605,7 +6170,7 @@ function MultiStreamRecorder(arrayOfMediaStreams, options) {
 
         mixer.appendStreams(streams);
 
-        if (options.previewStream && typeof options.previewStream === 'function') {
+        if (options.previewStream && typeof options.previewStream === "function") {
             options.previewStream(mixer.getMixedStream());
         }
     };
@@ -5643,13 +6208,13 @@ function MultiStreamRecorder(arrayOfMediaStreams, options) {
     };
 
     // for debugging
-    this.name = 'MultiStreamRecorder';
+    this.name = "MultiStreamRecorder";
     this.toString = function() {
         return this.name;
     };
 }
 
-if (typeof RecordRTC !== 'undefined') {
+if (typeof RecordRTC !== "undefined") {
     RecordRTC.MultiStreamRecorder = MultiStreamRecorder;
 }
 
@@ -5668,7 +6233,7 @@ if (typeof RecordRTC !== 'undefined') {
  * recorder.startRecording()
  *         .then(successCB)
  *         .catch(errorCB);
- * // Note: You can access all RecordRTC API using "recorder.recordRTC" e.g. 
+ * // Note: You can access all RecordRTC API using "recorder.recordRTC" e.g.
  * recorder.recordRTC.onStateChanged = function(state) {};
  * recorder.recordRTC.setRecordingDuration(5000);
  * @see {@link https://github.com/muaz-khan/RecordRTC|RecordRTC Source Code}
@@ -5680,11 +6245,11 @@ if (typeof RecordRTC !== 'undefined') {
 
 function RecordRTCPromisesHandler(mediaStream, options) {
     if (!this) {
-        throw 'Use "new RecordRTCPromisesHandler()"';
+        throw "Use 'new RecordRTCPromisesHandler()'";
     }
 
-    if (typeof mediaStream === 'undefined') {
-        throw 'First argument "MediaStream" is required.';
+    if (typeof mediaStream === "undefined") {
+        throw "First argument 'MediaStream' is required.";
     }
 
     var self = this;
@@ -5735,7 +6300,7 @@ function RecordRTCPromisesHandler(mediaStream, options) {
                     self.blob = self.recordRTC.getBlob();
 
                     if (!self.blob || !self.blob.size) {
-                        reject('Empty blob.', self.blob);
+                        reject("Empty blob.", self.blob);
                         return;
                     }
 
@@ -5839,7 +6404,7 @@ function RecordRTCPromisesHandler(mediaStream, options) {
      *     internalRecorder.addStreams([newAudioStream]);
      *     internalRecorder.resetVideoStreams([screenStream]);
      * }
-     * @returns {Object} 
+     * @returns {Object}
      */
     this.getInternalRecorder = function() {
         return new Promise(function(resolve, reject) {
@@ -5925,10 +6490,10 @@ function RecordRTCPromisesHandler(mediaStream, options) {
      * @example
      * alert(recorder.version);
      */
-    this.version = '5.6.3';
+    this.version = "5.6.4";
 }
 
-if (typeof RecordRTC !== 'undefined') {
+if (typeof RecordRTC !== "undefined") {
     RecordRTC.RecordRTCPromisesHandler = RecordRTCPromisesHandler;
 }
 
@@ -5955,9 +6520,14 @@ if (typeof RecordRTC !== 'undefined') {
 function WebAssemblyRecorder(stream, config) {
     // based on: github.com/GoogleChromeLabs/webm-wasm
 
-    if (typeof ReadableStream === 'undefined' || typeof WritableStream === 'undefined') {
+    if (
+        typeof ReadableStream === "undefined" ||
+        typeof WritableStream === "undefined"
+    ) {
         // because it fixes readable/writable streams issues
-        console.error('Following polyfill is strongly recommended: https://unpkg.com/@mattiasbuelens/web-streams-polyfill/dist/polyfill.min.js');
+        console.error(
+            "Following polyfill is strongly recommended: https://unpkg.com/@mattiasbuelens/web-streams-polyfill/dist/polyfill.min.js"
+        );
     }
 
     config = config || {};
@@ -5969,9 +6539,11 @@ function WebAssemblyRecorder(stream, config) {
     config.realtime = config.realtime || true;
 
     function createBufferURL(buffer, type) {
-        return URL.createObjectURL(new Blob([buffer], {
-            type: type || ''
-        }));
+        return URL.createObjectURL(
+            new Blob([buffer], {
+                type: type || "",
+            })
+        );
     }
 
     var finished;
@@ -5979,8 +6551,8 @@ function WebAssemblyRecorder(stream, config) {
     function cameraStream() {
         return new ReadableStream({
             start: function(controller) {
-                var cvs = document.createElement('canvas');
-                var video = document.createElement('video');
+                var cvs = document.createElement("canvas");
+                var video = document.createElement("video");
                 var first = true;
                 video.srcObject = stream;
                 video.muted = true;
@@ -5990,7 +6562,7 @@ function WebAssemblyRecorder(stream, config) {
                 video.onplaying = function() {
                     cvs.width = config.width;
                     cvs.height = config.height;
-                    var ctx = cvs.getContext('2d');
+                    var ctx = cvs.getContext("2d");
                     var frameTimeout = 1000 / config.frameRate;
                     var cameraTimer = setInterval(function f() {
                         if (finished) {
@@ -6006,7 +6578,7 @@ function WebAssemblyRecorder(stream, config) {
                         }
 
                         ctx.drawImage(video, 0, 0);
-                        if (controller._controlledReadableStream.state !== 'closed') {
+                        if (controller._controlledReadableStream.state !== "closed") {
                             try {
                                 controller.enqueue(
                                     ctx.getImageData(0, 0, config.width, config.height)
@@ -6016,7 +6588,7 @@ function WebAssemblyRecorder(stream, config) {
                     }, frameTimeout);
                 };
                 video.play();
-            }
+            },
         });
     }
 
@@ -6028,50 +6600,55 @@ function WebAssemblyRecorder(stream, config) {
 
             // is it safe to use @latest ?
 
-            fetch(
-                'https://unpkg.com/webm-wasm@latest/dist/webm-worker.js'
-            ).then(function(r) {
-                r.arrayBuffer().then(function(buffer) {
-                    startRecording(stream, buffer);
-                });
-            });
+            fetch("https://unpkg.com/webm-wasm@latest/dist/webm-worker.js").then(
+                function(r) {
+                    r.arrayBuffer().then(function(buffer) {
+                        startRecording(stream, buffer);
+                    });
+                }
+            );
             return;
         }
 
         if (!config.workerPath && buffer instanceof ArrayBuffer) {
             var blob = new Blob([buffer], {
-                type: 'text/javascript'
+                type: "text/javascript",
             });
             config.workerPath = URL.createObjectURL(blob);
         }
 
         if (!config.workerPath) {
-            console.error('workerPath parameter is missing.');
+            console.error("workerPath parameter is missing.");
         }
 
         worker = new Worker(config.workerPath);
 
-        worker.postMessage(config.webAssemblyPath || 'https://unpkg.com/webm-wasm@latest/dist/webm-wasm.wasm');
-        worker.addEventListener('message', function(event) {
-            if (event.data === 'READY') {
+        worker.postMessage(
+            config.webAssemblyPath ||
+            "https://unpkg.com/webm-wasm@latest/dist/webm-wasm.wasm"
+        );
+        worker.addEventListener("message", function(event) {
+            if (event.data === "READY") {
                 worker.postMessage({
                     width: config.width,
                     height: config.height,
                     bitrate: config.bitrate || 1200,
                     timebaseDen: config.frameRate || 30,
-                    realtime: config.realtime
+                    realtime: config.realtime,
                 });
 
-                cameraStream().pipeTo(new WritableStream({
-                    write: function(image) {
-                        if (finished) {
-                            console.error('Got image, but recorder is finished!');
-                            return;
-                        }
+                cameraStream().pipeTo(
+                    new WritableStream({
+                        write: function(image) {
+                            if (finished) {
+                                console.error("Got image, but recorder is finished!");
+                                return;
+                            }
 
-                        worker.postMessage(image.data.buffer, [image.data.buffer]);
-                    }
-                }));
+                            worker.postMessage(image.data.buffer, [image.data.buffer]);
+                        },
+                    })
+                );
             } else if (!!event.data) {
                 if (!isPaused) {
                     arrayOfBuffers.push(event.data);
@@ -6093,7 +6670,7 @@ function WebAssemblyRecorder(stream, config) {
         this.blob = null;
         startRecording(stream);
 
-        if (typeof config.initCallback === 'function') {
+        if (typeof config.initCallback === "function") {
             config.initCallback();
         }
     };
@@ -6132,7 +6709,7 @@ function WebAssemblyRecorder(stream, config) {
         }
 
         // Wait for null event data to indicate that the encoding is complete
-        worker.addEventListener('message', function(event) {
+        worker.addEventListener("message", function(event) {
             if (event.data === null) {
                 worker.terminate();
                 worker = null;
@@ -6165,7 +6742,7 @@ function WebAssemblyRecorder(stream, config) {
 
         terminate(function() {
             recorder.blob = new Blob(arrayOfBuffers, {
-                type: 'video/webm'
+                type: "video/webm",
             });
 
             callback(recorder.blob);
@@ -6173,7 +6750,7 @@ function WebAssemblyRecorder(stream, config) {
     };
 
     // for debugging
-    this.name = 'WebAssemblyRecorder';
+    this.name = "WebAssemblyRecorder";
     this.toString = function() {
         return this.name;
     };
@@ -6204,6 +6781,6 @@ function WebAssemblyRecorder(stream, config) {
     this.blob = null;
 }
 
-if (typeof RecordRTC !== 'undefined') {
+if (typeof RecordRTC !== "undefined") {
     RecordRTC.WebAssemblyRecorder = WebAssemblyRecorder;
 }

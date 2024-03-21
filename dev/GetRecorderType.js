@@ -27,40 +27,62 @@ function GetRecorderType(mediaStream, config) {
         recorder = StereoAudioRecorder;
     }
 
-    if (typeof MediaRecorder !== 'undefined' && 'requestData' in MediaRecorder.prototype && !isChrome) {
+    if (
+        typeof MediaRecorder !== "undefined" &&
+        "requestData" in MediaRecorder.prototype &&
+        !isChrome
+    ) {
         recorder = MediaStreamRecorder;
     }
 
     // video recorder (in WebM format)
-    if (config.type === 'video' && (isChrome || isOpera)) {
+    if (config.type === "video" && (isChrome || isOpera)) {
         recorder = WhammyRecorder;
 
-        if (typeof WebAssemblyRecorder !== 'undefined' && typeof ReadableStream !== 'undefined') {
+        if (
+            typeof WebAssemblyRecorder !== "undefined" &&
+            typeof ReadableStream !== "undefined"
+        ) {
             recorder = WebAssemblyRecorder;
         }
     }
 
     // video recorder (in Gif format)
-    if (config.type === 'gif') {
+    if (config.type === "gif") {
         recorder = GifRecorder;
     }
 
     // html2canvas recording!
-    if (config.type === 'canvas') {
+    if (config.type === "canvas") {
         recorder = CanvasRecorder;
     }
 
-    if (isMediaRecorderCompatible() && recorder !== CanvasRecorder && recorder !== GifRecorder && typeof MediaRecorder !== 'undefined' && 'requestData' in MediaRecorder.prototype) {
-        if (getTracks(mediaStream, 'video').length || getTracks(mediaStream, 'audio').length) {
+    if (
+        isMediaRecorderCompatible() &&
+        recorder !== CanvasRecorder &&
+        recorder !== GifRecorder &&
+        typeof MediaRecorder !== "undefined" &&
+        "requestData" in MediaRecorder.prototype
+    ) {
+        if (
+            getTracks(mediaStream, "video").length ||
+            getTracks(mediaStream, "audio").length
+        ) {
             // audio-only recording
-            if (config.type === 'audio') {
-                if (typeof MediaRecorder.isTypeSupported === 'function' && MediaRecorder.isTypeSupported('audio/webm')) {
+            if (config.type === "audio") {
+                if (
+                    typeof MediaRecorder.isTypeSupported === "function" &&
+                    MediaRecorder.isTypeSupported("audio/webm")
+                ) {
                     recorder = MediaStreamRecorder;
                 }
                 // else recorder = StereoAudioRecorder;
             } else {
                 // video or screen tracks
-                if (typeof MediaRecorder.isTypeSupported === 'function' && MediaRecorder.isTypeSupported('video/webm')) {
+                if (
+                    typeof MediaRecorder.isTypeSupported === "function" &&
+                    MediaRecorder.isTypeSupported("video/webm")
+                ) {
                     recorder = MediaStreamRecorder;
                 }
             }
@@ -76,7 +98,10 @@ function GetRecorderType(mediaStream, config) {
     }
 
     if (!config.disableLogs && !!recorder && !!recorder.name) {
-        console.log('Using recorderType:', recorder.name || recorder.constructor.name);
+        console.log(
+            "Using recorderType:",
+            recorder.name || recorder.constructor.name
+        );
     }
 
     if (!recorder && isSafari) {

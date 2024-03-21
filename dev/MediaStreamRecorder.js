@@ -32,46 +32,56 @@
  * @throws Will throw an error if first argument "MediaStream" is missing. Also throws error if "MediaRecorder API" are not supported by the browser.
  */
 
-function MediaStreamRecorder(mediaStream, config) {
+function MediaStreamRecorder(mediaStream, config, indexDBClient) {
     var self = this;
 
-    if (typeof mediaStream === 'undefined') {
-        throw 'First argument "MediaStream" is required.';
+    if (typeof mediaStream === "undefined") {
+        throw "First argument 'MediaStream' is required.";
     }
 
-    if (typeof MediaRecorder === 'undefined') {
-        throw 'Your browser does not support the Media Recorder API. Please try other modules e.g. WhammyRecorder or StereoAudioRecorder.';
+    if (typeof MediaRecorder === "undefined") {
+        throw "Your browser does not support the Media Recorder API. Please try other modules e.g. WhammyRecorder or StereoAudioRecorder.";
     }
 
     config = config || {
         // bitsPerSecond: 256 * 8 * 1024,
-        mimeType: 'video/webm'
+        mimeType: "video/webm",
     };
 
-    if (config.type === 'audio') {
-        if (getTracks(mediaStream, 'video').length && getTracks(mediaStream, 'audio').length) {
+    if (config.type === "audio") {
+        if (
+            getTracks(mediaStream, "video").length &&
+            getTracks(mediaStream, "audio").length
+        ) {
             var stream;
             if (!!navigator.mozGetUserMedia) {
                 stream = new MediaStream();
-                stream.addTrack(getTracks(mediaStream, 'audio')[0]);
+                stream.addTrack(getTracks(mediaStream, "audio")[0]);
             } else {
                 // webkitMediaStream
-                stream = new MediaStream(getTracks(mediaStream, 'audio'));
+                stream = new MediaStream(getTracks(mediaStream, "audio"));
             }
             mediaStream = stream;
         }
 
-        if (!config.mimeType || config.mimeType.toString().toLowerCase().indexOf('audio') === -1) {
-            config.mimeType = isChrome ? 'audio/webm' : 'audio/ogg';
+        if (
+            !config.mimeType ||
+            config.mimeType.toString().toLowerCase().indexOf("audio") === -1
+        ) {
+            config.mimeType = isChrome ? "audio/webm" : "audio/ogg";
         }
 
-        if (config.mimeType && config.mimeType.toString().toLowerCase() !== 'audio/ogg' && !!navigator.mozGetUserMedia) {
+        if (
+            config.mimeType &&
+            config.mimeType.toString().toLowerCase() !== "audio/ogg" &&
+            !!navigator.mozGetUserMedia
+        ) {
             // forcing better codecs on Firefox (via #166)
-            config.mimeType = 'audio/ogg';
+            config.mimeType = "audio/ogg";
         }
     }
 
-    var arrayOfBlobs = [];
+    // var arrayOfBlobs = [];
 
     /**
      * This method returns array of blobs. Use only with "timeSlice". Its useful to preview recording anytime, without using the "stop" method.
@@ -82,7 +92,7 @@ function MediaStreamRecorder(mediaStream, config) {
      * @returns {Array} Returns array of recorded blobs.
      */
     this.getArrayOfBlobs = function() {
-        return arrayOfBlobs;
+        return indexDBClient.getDataAsArrayBuffer();
     };
 
     /**
@@ -98,12 +108,15 @@ function MediaStreamRecorder(mediaStream, config) {
         self.clearRecordedData();
         self.timestamps = [];
         allStates = [];
-        arrayOfBlobs = [];
+        // arrayOfBlobs = [];
 
         var recorderHints = config;
 
         if (!config.disableLogs) {
-            console.log('Passing following config over MediaRecorder API.', recorderHints);
+            console.log(
+                "Passing following config over MediaRecorder API.",
+                recorderHints
+            );
         }
 
         if (mediaRecorder) {
@@ -113,16 +126,23 @@ function MediaStreamRecorder(mediaStream, config) {
 
         if (isChrome && !isMediaRecorderCompatible()) {
             // to support video-only recording on stable
-            recorderHints = 'video/vp8';
+            recorderHints = "video/vp8";
         }
 
-        if (typeof MediaRecorder.isTypeSupported === 'function' && recorderHints.mimeType) {
+        if (
+            typeof MediaRecorder.isTypeSupported === "function" &&
+            recorderHints.mimeType
+        ) {
             if (!MediaRecorder.isTypeSupported(recorderHints.mimeType)) {
                 if (!config.disableLogs) {
-                    console.warn('MediaRecorder API seems unable to record mimeType:', recorderHints.mimeType);
+                    console.warn(
+                        "MediaRecorder API seems unable to record mimeType:",
+                        recorderHints.mimeType
+                    );
                 }
 
-                recorderHints.mimeType = config.type === 'audio' ? 'audio/webm' : 'video/webm';
+                recorderHints.mimeType =
+                    config.type === "audio" ? "audio/webm" : "video/webm";
             }
         }
 
@@ -138,28 +158,41 @@ function MediaStreamRecorder(mediaStream, config) {
         }
 
         // old hack?
-        if (recorderHints.mimeType && !MediaRecorder.isTypeSupported && 'canRecordMimeType' in mediaRecorder && mediaRecorder.canRecordMimeType(recorderHints.mimeType) === false) {
+        if (
+            recorderHints.mimeType &&
+            !MediaRecorder.isTypeSupported &&
+            "canRecordMimeType" in mediaRecorder &&
+            mediaRecorder.canRecordMimeType(recorderHints.mimeType) === false
+        ) {
             if (!config.disableLogs) {
-                console.warn('MediaRecorder API seems unable to record mimeType:', recorderHints.mimeType);
+                console.warn(
+                    "MediaRecorder API seems unable to record mimeType:",
+                    recorderHints.mimeType
+                );
             }
         }
 
         // Dispatching OnDataAvailable Handler
         mediaRecorder.ondataavailable = function(e) {
+            console.log("[ABM] ondataavailable", e.data.size, e.data.type);
             if (e.data) {
-                allStates.push('ondataavailable: ' + bytesToSize(e.data.size));
+                allStates.push("ondataavailable: " + bytesToSize(e.data.size));
             }
 
-            if (typeof config.timeSlice === 'number') {
+            if (typeof config.timeSlice === "number") {
                 if (e.data && e.data.size) {
-                    arrayOfBlobs.push(e.data);
+                    console.log("[ABM] Writing chunk ", e.data.size);
+                    // arrayOfBlobs.push(e.data);
+                    indexDBClient.put(e.data);
                     updateTimeStamp();
 
-                    if (typeof config.ondataavailable === 'function') {
+                    if (typeof config.ondataavailable === "function") {
                         // intervals based blobs
-                        var blob = config.getNativeBlob ? e.data : new Blob([e.data], {
-                            type: getMimeType(recorderHints)
-                        });
+                        var blob = config.getNativeBlob ?
+                            e.data :
+                            new Blob([e.data], {
+                                type: getMimeType(recorderHints),
+                            });
                         config.ondataavailable(blob);
                     }
                 }
@@ -170,17 +203,21 @@ function MediaStreamRecorder(mediaStream, config) {
                 // make sure that stopRecording always getting fired
                 // even if there is invalid data
                 if (self.recordingCallback) {
-                    self.recordingCallback(new Blob([], {
-                        type: getMimeType(recorderHints)
-                    }));
+                    self.recordingCallback(
+                        new Blob([], {
+                            type: getMimeType(recorderHints),
+                        })
+                    );
                     self.recordingCallback = null;
                 }
                 return;
             }
 
-            self.blob = config.getNativeBlob ? e.data : new Blob([e.data], {
-                type: getMimeType(recorderHints)
-            });
+            self.blob = config.getNativeBlob ?
+                e.data :
+                new Blob([e.data], {
+                    type: getMimeType(recorderHints),
+                });
 
             if (self.recordingCallback) {
                 self.recordingCallback(self.blob);
@@ -189,19 +226,19 @@ function MediaStreamRecorder(mediaStream, config) {
         };
 
         mediaRecorder.onstart = function() {
-            allStates.push('started');
+            allStates.push("started");
         };
 
         mediaRecorder.onpause = function() {
-            allStates.push('paused');
+            allStates.push("paused");
         };
 
         mediaRecorder.onresume = function() {
-            allStates.push('resumed');
+            allStates.push("resumed");
         };
 
         mediaRecorder.onstop = function() {
-            allStates.push('stopped');
+            allStates.push("stopped");
         };
 
         mediaRecorder.onerror = function(error) {
@@ -210,37 +247,67 @@ function MediaStreamRecorder(mediaStream, config) {
             }
 
             if (!error.name) {
-                error.name = 'UnknownError';
+                error.name = "UnknownError";
             }
 
-            allStates.push('error: ' + error);
+            allStates.push("error: " + error);
 
             if (!config.disableLogs) {
                 // via: https://w3c.github.io/mediacapture-record/MediaRecorder.html#exception-summary
-                if (error.name.toString().toLowerCase().indexOf('invalidstate') !== -1) {
-                    console.error('The MediaRecorder is not in a state in which the proposed operation is allowed to be executed.', error);
-                } else if (error.name.toString().toLowerCase().indexOf('notsupported') !== -1) {
-                    console.error('MIME type (', recorderHints.mimeType, ') is not supported.', error);
-                } else if (error.name.toString().toLowerCase().indexOf('security') !== -1) {
-                    console.error('MediaRecorder security error', error);
+                if (
+                    error.name.toString().toLowerCase().indexOf("invalidstate") !== -1
+                ) {
+                    console.error(
+                        "The MediaRecorder is not in a state in which the proposed operation is allowed to be executed.",
+                        error
+                    );
+                } else if (
+                    error.name.toString().toLowerCase().indexOf("notsupported") !== -1
+                ) {
+                    console.error(
+                        "MIME type (",
+                        recorderHints.mimeType,
+                        ") is not supported.",
+                        error
+                    );
+                } else if (
+                    error.name.toString().toLowerCase().indexOf("security") !== -1
+                ) {
+                    console.error("MediaRecorder security error", error);
                 }
 
                 // older code below
-                else if (error.name === 'OutOfMemory') {
-                    console.error('The UA has exhaused the available memory. User agents SHOULD provide as much additional information as possible in the message attribute.', error);
-                } else if (error.name === 'IllegalStreamModification') {
-                    console.error('A modification to the stream has occurred that makes it impossible to continue recording. An example would be the addition of a Track while recording is occurring. User agents SHOULD provide as much additional information as possible in the message attribute.', error);
-                } else if (error.name === 'OtherRecordingError') {
-                    console.error('Used for an fatal error other than those listed above. User agents SHOULD provide as much additional information as possible in the message attribute.', error);
-                } else if (error.name === 'GenericError') {
-                    console.error('The UA cannot provide the codec or recording option that has been requested.', error);
+                else if (error.name === "OutOfMemory") {
+                    console.error(
+                        "The UA has exhaused the available memory. User agents SHOULD provide as much additional information as possible in the message attribute.",
+                        error
+                    );
+                } else if (error.name === "IllegalStreamModification") {
+                    console.error(
+                        "A modification to the stream has occurred that makes it impossible to continue recording. An example would be the addition of a Track while recording is occurring. User agents SHOULD provide as much additional information as possible in the message attribute.",
+                        error
+                    );
+                } else if (error.name === "OtherRecordingError") {
+                    console.error(
+                        "Used for an fatal error other than those listed above. User agents SHOULD provide as much additional information as possible in the message attribute.",
+                        error
+                    );
+                } else if (error.name === "GenericError") {
+                    console.error(
+                        "The UA cannot provide the codec or recording option that has been requested.",
+                        error
+                    );
                 } else {
-                    console.error('MediaRecorder Error', error);
+                    console.error("MediaRecorder Error", error);
                 }
             }
 
             (function(looper) {
-                if (!self.manuallyStopped && mediaRecorder && mediaRecorder.state === 'inactive') {
+                if (
+                    !self.manuallyStopped &&
+                    mediaRecorder &&
+                    mediaRecorder.state === "inactive"
+                ) {
                     delete config.timeslice;
 
                     // 10 minutes, enough?
@@ -251,12 +318,15 @@ function MediaStreamRecorder(mediaStream, config) {
                 setTimeout(looper, 1000);
             })();
 
-            if (mediaRecorder.state !== 'inactive' && mediaRecorder.state !== 'stopped') {
+            if (
+                mediaRecorder.state !== "inactive" &&
+                mediaRecorder.state !== "stopped"
+            ) {
                 mediaRecorder.stop();
             }
         };
 
-        if (typeof config.timeSlice === 'number') {
+        if (typeof config.timeSlice === "number") {
             updateTimeStamp();
             mediaRecorder.start(config.timeSlice);
         } else {
@@ -282,8 +352,11 @@ function MediaStreamRecorder(mediaStream, config) {
     function updateTimeStamp() {
         self.timestamps.push(new Date().getTime());
 
-        if (typeof config.onTimeStamp === 'function') {
-            config.onTimeStamp(self.timestamps[self.timestamps.length - 1], self.timestamps);
+        if (typeof config.onTimeStamp === "function") {
+            config.onTimeStamp(
+                self.timestamps[self.timestamps.length - 1],
+                self.timestamps
+            );
         }
     }
 
@@ -292,7 +365,7 @@ function MediaStreamRecorder(mediaStream, config) {
             return mediaRecorder.mimeType;
         }
 
-        return secondObject.mimeType || 'video/webm';
+        return secondObject.mimeType || "video/webm";
     }
 
     /**
@@ -316,15 +389,21 @@ function MediaStreamRecorder(mediaStream, config) {
 
         this.recordingCallback = callback;
 
-        if (mediaRecorder.state === 'recording') {
+        if (mediaRecorder.state === "recording") {
             mediaRecorder.stop();
         }
 
-        if (typeof config.timeSlice === 'number') {
+        if (typeof config.timeSlice === "number") {
+            console.info("[ABM] Timeslicing function...");
             setTimeout(function() {
-                self.blob = new Blob(arrayOfBlobs, {
-                    type: getMimeType(config)
-                });
+                console.info(
+                    "[ABM] Running the timeslicing loop...",
+                    mediaRecorder.state
+                );
+                // self.blob = new Blob(arrayOfBlobs, {
+                //     type: getMimeType(config),
+                // });
+                self.blob = indexDBClient.getData();
 
                 self.recordingCallback(self.blob);
             }, 100);
@@ -343,7 +422,7 @@ function MediaStreamRecorder(mediaStream, config) {
             return;
         }
 
-        if (mediaRecorder.state === 'recording') {
+        if (mediaRecorder.state === "recording") {
             mediaRecorder.pause();
         }
     };
@@ -360,7 +439,7 @@ function MediaStreamRecorder(mediaStream, config) {
             return;
         }
 
-        if (mediaRecorder.state === 'paused') {
+        if (mediaRecorder.state === "paused") {
             mediaRecorder.resume();
         }
     };
@@ -373,7 +452,7 @@ function MediaStreamRecorder(mediaStream, config) {
      * recorder.clearRecordedData();
      */
     this.clearRecordedData = function() {
-        if (mediaRecorder && mediaRecorder.state === 'recording') {
+        if (mediaRecorder && mediaRecorder.state === "recording") {
             self.stop(clearRecordedDataCB);
         }
 
@@ -381,7 +460,8 @@ function MediaStreamRecorder(mediaStream, config) {
     };
 
     function clearRecordedDataCB() {
-        arrayOfBlobs = [];
+        // arrayOfBlobs = [];
+        indexDBClient.reset();
         mediaRecorder = null;
         self.timestamps = [];
     }
@@ -405,11 +485,12 @@ function MediaStreamRecorder(mediaStream, config) {
     };
 
     function isMediaStreamActive() {
-        if ('active' in mediaStream) {
+        if ("active" in mediaStream) {
             if (!mediaStream.active) {
                 return false;
             }
-        } else if ('ended' in mediaStream) { // old hack
+        } else if ("ended" in mediaStream) {
+            // old hack
             if (mediaStream.ended) {
                 return false;
             }
@@ -427,7 +508,6 @@ function MediaStreamRecorder(mediaStream, config) {
      */
     this.blob = null;
 
-
     /**
      * Get MediaRecorder readonly state.
      * @method
@@ -438,10 +518,10 @@ function MediaStreamRecorder(mediaStream, config) {
      */
     this.getState = function() {
         if (!mediaRecorder) {
-            return 'inactive';
+            return "inactive";
         }
 
-        return mediaRecorder.state || 'inactive';
+        return mediaRecorder.state || "inactive";
     };
 
     // list of all recording states
@@ -459,11 +539,11 @@ function MediaStreamRecorder(mediaStream, config) {
         return allStates;
     };
 
-    // if any Track within the MediaStream is muted or not enabled at any time, 
-    // the browser will only record black frames 
+    // if any Track within the MediaStream is muted or not enabled at any time,
+    // the browser will only record black frames
     // or silence since that is the content produced by the Track
     // so we need to stopRecording as soon as any single track ends.
-    if (typeof config.checkForInactiveTracks === 'undefined') {
+    if (typeof config.checkForInactiveTracks === "undefined") {
         config.checkForInactiveTracks = false; // disable to minimize CPU usage
     }
 
@@ -478,7 +558,7 @@ function MediaStreamRecorder(mediaStream, config) {
 
         if (isMediaStreamActive() === false) {
             if (!config.disableLogs) {
-                console.log('MediaStream seems stopped.');
+                console.log("MediaStream seems stopped.");
             }
             self.stop();
             return;
@@ -488,12 +568,12 @@ function MediaStreamRecorder(mediaStream, config) {
     })();
 
     // for debugging
-    this.name = 'MediaStreamRecorder';
+    this.name = "MediaStreamRecorder";
     this.toString = function() {
         return this.name;
     };
 }
 
-if (typeof RecordRTC !== 'undefined') {
+if (typeof RecordRTC !== "undefined") {
     RecordRTC.MediaStreamRecorder = MediaStreamRecorder;
 }

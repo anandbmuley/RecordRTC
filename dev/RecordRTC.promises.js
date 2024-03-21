@@ -13,7 +13,7 @@
  * recorder.startRecording()
  *         .then(successCB)
  *         .catch(errorCB);
- * // Note: You can access all RecordRTC API using "recorder.recordRTC" e.g. 
+ * // Note: You can access all RecordRTC API using "recorder.recordRTC" e.g.
  * recorder.recordRTC.onStateChanged = function(state) {};
  * recorder.recordRTC.setRecordingDuration(5000);
  * @see {@link https://github.com/muaz-khan/RecordRTC|RecordRTC Source Code}
@@ -25,11 +25,11 @@
 
 function RecordRTCPromisesHandler(mediaStream, options) {
     if (!this) {
-        throw 'Use "new RecordRTCPromisesHandler()"';
+        throw "Use 'new RecordRTCPromisesHandler()'";
     }
 
-    if (typeof mediaStream === 'undefined') {
-        throw 'First argument "MediaStream" is required.';
+    if (typeof mediaStream === "undefined") {
+        throw "First argument 'MediaStream' is required.";
     }
 
     var self = this;
@@ -80,7 +80,7 @@ function RecordRTCPromisesHandler(mediaStream, options) {
                     self.blob = self.recordRTC.getBlob();
 
                     if (!self.blob || !self.blob.size) {
-                        reject('Empty blob.', self.blob);
+                        reject("Empty blob.", self.blob);
                         return;
                     }
 
@@ -184,7 +184,7 @@ function RecordRTCPromisesHandler(mediaStream, options) {
      *     internalRecorder.addStreams([newAudioStream]);
      *     internalRecorder.resetVideoStreams([screenStream]);
      * }
-     * @returns {Object} 
+     * @returns {Object}
      */
     this.getInternalRecorder = function() {
         return new Promise(function(resolve, reject) {
@@ -270,9 +270,9 @@ function RecordRTCPromisesHandler(mediaStream, options) {
      * @example
      * alert(recorder.version);
      */
-    this.version = '@@version';
+    this.version = "@@version";
 }
 
-if (typeof RecordRTC !== 'undefined') {
+if (typeof RecordRTC !== "undefined") {
     RecordRTC.RecordRTCPromisesHandler = RecordRTCPromisesHandler;
 }

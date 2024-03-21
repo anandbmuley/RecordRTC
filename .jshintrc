@@ -6,7 +6,7 @@
   "eqeqeq": true,
   "forin": false,
   "globalstrict": true,
-  "quotmark": "single",
+  "quotmark": "double",
   "undef": true,
   "globals": {
     "RecordRTC": true,

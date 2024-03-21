@@ -11,11 +11,11 @@
 // --------------------------------------------------
 
 function MultiStreamsMixer(arrayOfMediaStreams, elementClass) {
-
-    var browserFakeUserAgent = 'Fake/5.0 (FakeOS) AppleWebKit/123 (KHTML, like Gecko) Fake/12.3.4567.89 Fake/123.45';
+    var browserFakeUserAgent =
+        "Fake/5.0 (FakeOS) AppleWebKit/123 (KHTML, like Gecko) Fake/12.3.4567.89 Fake/123.45";
 
     (function(that) {
-        if (typeof RecordRTC !== 'undefined') {
+        if (typeof RecordRTC !== "undefined") {
             return;
         }
 
@@ -23,105 +23,113 @@ function MultiStreamsMixer(arrayOfMediaStreams, elementClass) {
             return;
         }
 
-        if (typeof window !== 'undefined') {
+        if (typeof window !== "undefined") {
             return;
         }
 
-        if (typeof global === 'undefined') {
+        if (typeof global === "undefined") {
             return;
         }
 
         global.navigator = {
             userAgent: browserFakeUserAgent,
-            getUserMedia: function() {}
+            getUserMedia: function() {},
         };
 
         if (!global.console) {
             global.console = {};
         }
 
-        if (typeof global.console.log === 'undefined' || typeof global.console.error === 'undefined') {
-            global.console.error = global.console.log = global.console.log || function() {
-                console.log(arguments);
-            };
+        if (
+            typeof global.console.log === "undefined" ||
+            typeof global.console.error === "undefined"
+        ) {
+            global.console.error = global.console.log =
+                global.console.log ||
+                function() {
+                    console.log(arguments);
+                };
         }
 
-        if (typeof document === 'undefined') {
+        if (typeof document === "undefined") {
             /*global document:true */
             that.document = {
                 documentElement: {
                     appendChild: function() {
-                        return '';
-                    }
-                }
+                        return "";
+                    },
+                },
             };
 
-            document.createElement = document.captureStream = document.mozCaptureStream = function() {
-                var obj = {
-                    getContext: function() {
-                        return obj;
-                    },
-                    play: function() {},
-                    pause: function() {},
-                    drawImage: function() {},
-                    toDataURL: function() {
-                        return '';
-                    },
-                    style: {}
+            document.createElement =
+                document.captureStream =
+                document.mozCaptureStream =
+                function() {
+                    var obj = {
+                        getContext: function() {
+                            return obj;
+                        },
+                        play: function() {},
+                        pause: function() {},
+                        drawImage: function() {},
+                        toDataURL: function() {
+                            return "";
+                        },
+                        style: {},
+                    };
+                    return obj;
                 };
-                return obj;
-            };
 
             that.HTMLVideoElement = function() {};
         }
 
-        if (typeof location === 'undefined') {
+        if (typeof location === "undefined") {
             /*global location:true */
             that.location = {
-                protocol: 'file:',
-                href: '',
-                hash: ''
+                protocol: "file:",
+                href: "",
+                hash: "",
             };
         }
 
-        if (typeof screen === 'undefined') {
+        if (typeof screen === "undefined") {
             /*global screen:true */
             that.screen = {
                 width: 0,
-                height: 0
+                height: 0,
             };
         }
 
-        if (typeof URL === 'undefined') {
+        if (typeof URL === "undefined") {
             /*global screen:true */
             that.URL = {
                 createObjectURL: function() {
-                    return '';
+                    return "";
                 },
                 revokeObjectURL: function() {
-                    return '';
-                }
+                    return "";
+                },
             };
         }
 
         /*global window:true */
         that.window = global;
-    })(typeof global !== 'undefined' ? global : null);
+    })(typeof global !== "undefined" ? global : null);
 
     // requires: chrome://flags/#enable-experimental-web-platform-features
 
-    elementClass = elementClass || 'multi-streams-mixer';
+    elementClass = elementClass || "multi-streams-mixer";
 
     var videos = [];
     var isStopDrawingFrames = false;
 
-    var canvas = document.createElement('canvas');
-    var context = canvas.getContext('2d');
+    var canvas = document.createElement("canvas");
+    var context = canvas.getContext("2d");
     canvas.style.opacity = 0;
-    canvas.style.position = 'absolute';
+    canvas.style.position = "absolute";
     canvas.style.zIndex = -1;
-    canvas.style.top = '-1000em';
-    canvas.style.left = '-1000em';
+    canvas.style.top = "-1000em";
+    canvas.style.left = "-1000em";
     canvas.className = elementClass;
     (document.body || document.documentElement).appendChild(canvas);
 
@@ -142,13 +150,13 @@ function MultiStreamsMixer(arrayOfMediaStreams, elementClass) {
     // WebAudio API representer
     var AudioContext = window.AudioContext;
 
-    if (typeof AudioContext === 'undefined') {
-        if (typeof webkitAudioContext !== 'undefined') {
+    if (typeof AudioContext === "undefined") {
+        if (typeof webkitAudioContext !== "undefined") {
             /*global AudioContext:true */
             AudioContext = webkitAudioContext;
         }
 
-        if (typeof mozAudioContext !== 'undefined') {
+        if (typeof mozAudioContext !== "undefined") {
             /*global AudioContext:true */
             AudioContext = mozAudioContext;
         }
@@ -157,31 +165,38 @@ function MultiStreamsMixer(arrayOfMediaStreams, elementClass) {
     /*jshint -W079 */
     var URL = window.URL;
 
-    if (typeof URL === 'undefined' && typeof webkitURL !== 'undefined') {
+    if (typeof URL === "undefined" && typeof webkitURL !== "undefined") {
         /*global URL:true */
         URL = webkitURL;
     }
 
-    if (typeof navigator !== 'undefined' && typeof navigator.getUserMedia === 'undefined') { // maybe window.navigator?
-        if (typeof navigator.webkitGetUserMedia !== 'undefined') {
+    if (
+        typeof navigator !== "undefined" &&
+        typeof navigator.getUserMedia === "undefined"
+    ) {
+        // maybe window.navigator?
+        if (typeof navigator.webkitGetUserMedia !== "undefined") {
             navigator.getUserMedia = navigator.webkitGetUserMedia;
         }
 
-        if (typeof navigator.mozGetUserMedia !== 'undefined') {
+        if (typeof navigator.mozGetUserMedia !== "undefined") {
             navigator.getUserMedia = navigator.mozGetUserMedia;
         }
     }
 
     var MediaStream = window.MediaStream;
 
-    if (typeof MediaStream === 'undefined' && typeof webkitMediaStream !== 'undefined') {
+    if (
+        typeof MediaStream === "undefined" &&
+        typeof webkitMediaStream !== "undefined"
+    ) {
         MediaStream = webkitMediaStream;
     }
 
     /*global MediaStream:true */
-    if (typeof MediaStream !== 'undefined') {
+    if (typeof MediaStream !== "undefined") {
         // override "stop" method for all browsers
-        if (typeof MediaStream.prototype.stop === 'undefined') {
+        if (typeof MediaStream.prototype.stop === "undefined") {
             MediaStream.prototype.stop = function() {
                 this.getTracks().forEach(function(track) {
                     track.stop();
@@ -192,16 +207,16 @@ function MultiStreamsMixer(arrayOfMediaStreams, elementClass) {
 
     var Storage = {};
 
-    if (typeof AudioContext !== 'undefined') {
+    if (typeof AudioContext !== "undefined") {
         Storage.AudioContext = AudioContext;
-    } else if (typeof webkitAudioContext !== 'undefined') {
+    } else if (typeof webkitAudioContext !== "undefined") {
         Storage.AudioContext = webkitAudioContext;
     }
 
     function setSrcObject(stream, element) {
-        if ('srcObject' in element) {
+        if ("srcObject" in element) {
             element.srcObject = stream;
-        } else if ('mozSrcObject' in element) {
+        } else if ("mozSrcObject" in element) {
             element.mozSrcObject = stream;
         } else {
             element.srcObject = stream;
@@ -238,7 +253,8 @@ function MultiStreamsMixer(arrayOfMediaStreams, elementClass) {
             canvas.width = fullcanvas.stream.width;
             canvas.height = fullcanvas.stream.height;
         } else if (remaining.length) {
-            canvas.width = videosLength > 1 ? remaining[0].width * 2 : remaining[0].width;
+            canvas.width =
+                videosLength > 1 ? remaining[0].width * 2 : remaining[0].width;
 
             var height = 1;
             if (videosLength === 3 || videosLength === 4) {
@@ -311,25 +327,25 @@ function MultiStreamsMixer(arrayOfMediaStreams, elementClass) {
             y = video.height * 3;
         }
 
-        if (typeof video.stream.left !== 'undefined') {
+        if (typeof video.stream.left !== "undefined") {
             x = video.stream.left;
         }
 
-        if (typeof video.stream.top !== 'undefined') {
+        if (typeof video.stream.top !== "undefined") {
             y = video.stream.top;
         }
 
-        if (typeof video.stream.width !== 'undefined') {
+        if (typeof video.stream.width !== "undefined") {
             width = video.stream.width;
         }
 
-        if (typeof video.stream.height !== 'undefined') {
+        if (typeof video.stream.height !== "undefined") {
             height = video.stream.height;
         }
 
         context.drawImage(video, x, y, width, height);
 
-        if (typeof video.stream.onRender === 'function') {
+        if (typeof video.stream.onRender === "function") {
             video.stream.onRender(context, x, y, width, height, idx);
         }
     }
@@ -340,11 +356,14 @@ function MultiStreamsMixer(arrayOfMediaStreams, elementClass) {
 
         var mixedAudioStream = getMixedAudioStream();
         if (mixedAudioStream) {
-            mixedAudioStream.getTracks().filter(function(t) {
-                return t.kind === 'audio';
-            }).forEach(function(track) {
-                mixedVideoStream.addTrack(track);
-            });
+            mixedAudioStream
+                .getTracks()
+                .filter(function(t) {
+                    return t.kind === "audio";
+                })
+                .forEach(function(track) {
+                    mixedVideoStream.addTrack(track);
+                });
         }
 
         var fullcanvas;
@@ -366,21 +385,26 @@ function MultiStreamsMixer(arrayOfMediaStreams, elementClass) {
 
         var capturedStream;
 
-        if ('captureStream' in canvas) {
+        if ("captureStream" in canvas) {
             capturedStream = canvas.captureStream();
-        } else if ('mozCaptureStream' in canvas) {
+        } else if ("mozCaptureStream" in canvas) {
             capturedStream = canvas.mozCaptureStream();
         } else if (!self.disableLogs) {
-            console.error('Upgrade to latest Chrome or otherwise enable this flag: chrome://flags/#enable-experimental-web-platform-features');
+            console.error(
+                "Upgrade to latest Chrome or otherwise enable this flag: chrome://flags/#enable-experimental-web-platform-features"
+            );
         }
 
         var videoStream = new MediaStream();
 
-        capturedStream.getTracks().filter(function(t) {
-            return t.kind === 'video';
-        }).forEach(function(track) {
-            videoStream.addTrack(track);
-        });
+        capturedStream
+            .getTracks()
+            .filter(function(t) {
+                return t.kind === "video";
+            })
+            .forEach(function(track) {
+                videoStream.addTrack(track);
+            });
 
         canvas.stream = videoStream;
 
@@ -405,9 +429,11 @@ function MultiStreamsMixer(arrayOfMediaStreams, elementClass) {
 
         var audioTracksLength = 0;
         arrayOfMediaStreams.forEach(function(stream) {
-            if (!stream.getTracks().filter(function(t) {
-                    return t.kind === 'audio';
-                }).length) {
+            if (
+                !stream.getTracks().filter(function(t) {
+                    return t.kind === "audio";
+                }).length
+            ) {
                 return;
             }
 
@@ -436,7 +462,7 @@ function MultiStreamsMixer(arrayOfMediaStreams, elementClass) {
     }
 
     function getVideo(stream) {
-        var video = document.createElement('video');
+        var video = document.createElement("video");
 
         setSrcObject(stream, video);
 
@@ -455,7 +481,7 @@ function MultiStreamsMixer(arrayOfMediaStreams, elementClass) {
 
     this.appendStreams = function(streams) {
         if (!streams) {
-            throw 'First parameter is required.';
+            throw "First parameter is required.";
         }
 
         if (!(streams instanceof Array)) {
@@ -465,28 +491,37 @@ function MultiStreamsMixer(arrayOfMediaStreams, elementClass) {
         streams.forEach(function(stream) {
             var newStream = new MediaStream();
 
-            if (stream.getTracks().filter(function(t) {
-                    return t.kind === 'video';
-                }).length) {
+            if (
+                stream.getTracks().filter(function(t) {
+                    return t.kind === "video";
+                }).length
+            ) {
                 var video = getVideo(stream);
                 video.stream = stream;
                 videos.push(video);
 
-                newStream.addTrack(stream.getTracks().filter(function(t) {
-                    return t.kind === 'video';
-                })[0]);
+                newStream.addTrack(
+                    stream.getTracks().filter(function(t) {
+                        return t.kind === "video";
+                    })[0]
+                );
             }
 
-            if (stream.getTracks().filter(function(t) {
-                    return t.kind === 'audio';
-                }).length) {
+            if (
+                stream.getTracks().filter(function(t) {
+                    return t.kind === "audio";
+                }).length
+            ) {
                 var audioSource = self.audioContext.createMediaStreamSource(stream);
-                self.audioDestination = self.audioContext.createMediaStreamDestination();
+                self.audioDestination =
+                    self.audioContext.createMediaStreamDestination();
                 audioSource.connect(self.audioDestination);
 
-                newStream.addTrack(self.audioDestination.stream.getTracks().filter(function(t) {
-                    return t.kind === 'audio';
-                })[0]);
+                newStream.addTrack(
+                    self.audioDestination.stream.getTracks().filter(function(t) {
+                        return t.kind === "audio";
+                    })[0]
+                );
             }
 
             arrayOfMediaStreams.push(newStream);
@@ -542,9 +577,11 @@ function MultiStreamsMixer(arrayOfMediaStreams, elementClass) {
 
         // via: @adrian-ber
         streams.forEach(function(stream) {
-            if (!stream.getTracks().filter(function(t) {
-                    return t.kind === 'video';
-                }).length) {
+            if (
+                !stream.getTracks().filter(function(t) {
+                    return t.kind === "video";
+                }).length
+            ) {
                 return;
             }
 
@@ -555,22 +592,21 @@ function MultiStreamsMixer(arrayOfMediaStreams, elementClass) {
     }
 
     // for debugging
-    this.name = 'MultiStreamsMixer';
+    this.name = "MultiStreamsMixer";
     this.toString = function() {
         return this.name;
     };
 
     this.getMixedStream = getMixedStream;
-
 }
 
-if (typeof RecordRTC === 'undefined') {
-    if (typeof module !== 'undefined' /* && !!module.exports*/ ) {
+if (typeof RecordRTC === "undefined") {
+    if (typeof module !== "undefined" /* && !!module.exports*/ ) {
         module.exports = MultiStreamsMixer;
     }
 
-    if (typeof define === 'function' && define.amd) {
-        define('MultiStreamsMixer', [], function() {
+    if (typeof define === "function" && define.amd) {
+        define("MultiStreamsMixer", [], function() {
             return MultiStreamsMixer;
         });
     }

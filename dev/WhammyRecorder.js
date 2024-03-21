@@ -20,7 +20,6 @@
  */
 
 function WhammyRecorder(mediaStream, config) {
-
     config = config || {};
 
     if (!config.frameInterval) {
@@ -28,7 +27,7 @@ function WhammyRecorder(mediaStream, config) {
     }
 
     if (!config.disableLogs) {
-        console.log('Using frames-interval:', config.frameInterval);
+        console.log("Using frames-interval:", config.frameInterval);
     }
 
     /**
@@ -50,21 +49,21 @@ function WhammyRecorder(mediaStream, config) {
         if (!config.video) {
             config.video = {
                 width: config.width,
-                height: config.height
+                height: config.height,
             };
         }
 
         if (!config.canvas) {
             config.canvas = {
                 width: config.width,
-                height: config.height
+                height: config.height,
             };
         }
 
         canvas.width = config.canvas.width || 320;
         canvas.height = config.canvas.height || 240;
 
-        context = canvas.getContext('2d');
+        context = canvas.getContext("2d");
 
         // setting defaults
         if (config.video && config.video instanceof HTMLVideoElement) {
@@ -74,11 +73,12 @@ function WhammyRecorder(mediaStream, config) {
                 config.initCallback();
             }
         } else {
-            video = document.createElement('video');
+            video = document.createElement("video");
 
             setSrcObject(mediaStream, video);
 
-            video.onloadedmetadata = function() { // "onloadedmetadata" may NOT work in FF?
+            video.onloadedmetadata = function() {
+                // "onloadedmetadata" may NOT work in FF?
                 if (config.initCallback) {
                     config.initCallback();
                 }
@@ -95,8 +95,13 @@ function WhammyRecorder(mediaStream, config) {
         whammy = new Whammy.Video();
 
         if (!config.disableLogs) {
-            console.log('canvas resolutions', canvas.width, '*', canvas.height);
-            console.log('video width/height', video.width || canvas.width, '*', video.height || canvas.height);
+            console.log("canvas resolutions", canvas.width, "*", canvas.height);
+            console.log(
+                "video width/height",
+                video.width || canvas.width,
+                "*",
+                video.height || canvas.height
+            );
         }
 
         drawFrames(config.frameInterval);
@@ -107,7 +112,7 @@ function WhammyRecorder(mediaStream, config) {
      * @param {integer} frameInterval - set minimum interval (in milliseconds) between each time we push a frame to Whammy
      */
     function drawFrames(frameInterval) {
-        frameInterval = typeof frameInterval !== 'undefined' ? frameInterval : 10;
+        frameInterval = typeof frameInterval !== "undefined" ? frameInterval : 10;
 
         var duration = new Date().getTime() - lastTime;
         if (!duration) {
@@ -131,7 +136,7 @@ function WhammyRecorder(mediaStream, config) {
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
         whammy.frames.push({
             duration: duration,
-            image: canvas.toDataURL('image/webp')
+            image: canvas.toDataURL("image/webp"),
         });
 
         if (!isStopDrawing) {
@@ -157,7 +162,6 @@ function WhammyRecorder(mediaStream, config) {
         })();
     }
 
-
     /**
      * remove black frames from the beginning to the specified frame
      * @param {Array} _frames - array of frames to be checked
@@ -167,28 +171,40 @@ function WhammyRecorder(mediaStream, config) {
      * @returns {Array} - array of frames
      */
     // pull#293 by @volodalexey
-    function dropBlackFrames(_frames, _framesToCheck, _pixTolerance, _frameTolerance, callback) {
-        var localCanvas = document.createElement('canvas');
+    function dropBlackFrames(
+        _frames,
+        _framesToCheck,
+        _pixTolerance,
+        _frameTolerance,
+        callback
+    ) {
+        var localCanvas = document.createElement("canvas");
         localCanvas.width = canvas.width;
         localCanvas.height = canvas.height;
-        var context2d = localCanvas.getContext('2d');
+        var context2d = localCanvas.getContext("2d");
         var resultFrames = [];
 
         var checkUntilNotBlack = _framesToCheck === -1;
-        var endCheckFrame = (_framesToCheck && _framesToCheck > 0 && _framesToCheck <= _frames.length) ?
-            _framesToCheck : _frames.length;
+        var endCheckFrame =
+            _framesToCheck && _framesToCheck > 0 && _framesToCheck <= _frames.length ?
+            _framesToCheck :
+            _frames.length;
         var sampleColor = {
             r: 0,
             g: 0,
-            b: 0
+            b: 0,
         };
         var maxColorDifference = Math.sqrt(
-            Math.pow(255, 2) +
-            Math.pow(255, 2) +
-            Math.pow(255, 2)
+            Math.pow(255, 2) + Math.pow(255, 2) + Math.pow(255, 2)
         );
-        var pixTolerance = _pixTolerance && _pixTolerance >= 0 && _pixTolerance <= 1 ? _pixTolerance : 0;
-        var frameTolerance = _frameTolerance && _frameTolerance >= 0 && _frameTolerance <= 1 ? _frameTolerance : 0;
+        var pixTolerance =
+            _pixTolerance && _pixTolerance >= 0 && _pixTolerance <= 1 ?
+            _pixTolerance :
+            0;
+        var frameTolerance =
+            _frameTolerance && _frameTolerance >= 0 && _frameTolerance <= 1 ?
+            _frameTolerance :
+            0;
         var doNotCheckNext = false;
 
         asyncLoop({
@@ -197,7 +213,10 @@ function WhammyRecorder(mediaStream, config) {
                 var matchPixCount, endPixCheck, maxPixCount;
 
                 var finishImage = function() {
-                    if (!doNotCheckNext && maxPixCount - matchPixCount <= maxPixCount * frameTolerance) {
+                    if (
+                        !doNotCheckNext &&
+                        maxPixCount - matchPixCount <= maxPixCount * frameTolerance
+                    ) {
                         // console.log('removed black frame : ' + f + ' ; frame duration ' + _frames[f].duration);
                     } else {
                         // console.log('frame is passed : ' + f);
@@ -213,7 +232,12 @@ function WhammyRecorder(mediaStream, config) {
                     var image = new Image();
                     image.onload = function() {
                         context2d.drawImage(image, 0, 0, canvas.width, canvas.height);
-                        var imageData = context2d.getImageData(0, 0, canvas.width, canvas.height);
+                        var imageData = context2d.getImageData(
+                            0,
+                            0,
+                            canvas.width,
+                            canvas.height
+                        );
                         matchPixCount = 0;
                         endPixCheck = imageData.data.length;
                         maxPixCount = imageData.data.length / 4;
@@ -222,7 +246,7 @@ function WhammyRecorder(mediaStream, config) {
                             var currentColor = {
                                 r: imageData.data[pix],
                                 g: imageData.data[pix + 1],
-                                b: imageData.data[pix + 2]
+                                b: imageData.data[pix + 2],
                             };
                             var colorDifference = Math.sqrt(
                                 Math.pow(currentColor.r - sampleColor.r, 2) +
@@ -250,7 +274,7 @@ function WhammyRecorder(mediaStream, config) {
                     resultFrames.push(_frames[_frames.length - 1]);
                 }
                 callback(resultFrames);
-            }
+            },
         });
     }
 
@@ -298,7 +322,7 @@ function WhammyRecorder(mediaStream, config) {
 
                     if (_this.blob.forEach) {
                         _this.blob = new Blob([], {
-                            type: 'video/webm'
+                            type: "video/webm",
                         });
                     }
 
@@ -359,19 +383,19 @@ function WhammyRecorder(mediaStream, config) {
     }
 
     // for debugging
-    this.name = 'WhammyRecorder';
+    this.name = "WhammyRecorder";
     this.toString = function() {
         return this.name;
     };
 
-    var canvas = document.createElement('canvas');
-    var context = canvas.getContext('2d');
+    var canvas = document.createElement("canvas");
+    var context = canvas.getContext("2d");
 
     var video;
     var lastTime;
     var whammy;
 }
 
-if (typeof RecordRTC !== 'undefined') {
+if (typeof RecordRTC !== "undefined") {
     RecordRTC.WhammyRecorder = WhammyRecorder;
 }

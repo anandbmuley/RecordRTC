@@ -5,28 +5,28 @@ function isMediaRecorderCompatible() {
 
     var nVer = navigator.appVersion;
     var nAgt = navigator.userAgent;
-    var fullVersion = '' + parseFloat(navigator.appVersion);
+    var fullVersion = "" + parseFloat(navigator.appVersion);
     var majorVersion = parseInt(navigator.appVersion, 10);
     var nameOffset, verOffset, ix;
 
     if (isChrome || isOpera) {
-        verOffset = nAgt.indexOf('Chrome');
+        verOffset = nAgt.indexOf("Chrome");
         fullVersion = nAgt.substring(verOffset + 7);
     }
 
     // trim the fullVersion string at semicolon/space if present
-    if ((ix = fullVersion.indexOf(';')) !== -1) {
+    if ((ix = fullVersion.indexOf(";")) !== -1) {
         fullVersion = fullVersion.substring(0, ix);
     }
 
-    if ((ix = fullVersion.indexOf(' ')) !== -1) {
+    if ((ix = fullVersion.indexOf(" ")) !== -1) {
         fullVersion = fullVersion.substring(0, ix);
     }
 
-    majorVersion = parseInt('' + fullVersion, 10);
+    majorVersion = parseInt("" + fullVersion, 10);
 
     if (isNaN(majorVersion)) {
-        fullVersion = '' + parseFloat(navigator.appVersion);
+        fullVersion = "" + parseFloat(navigator.appVersion);
         majorVersion = parseInt(navigator.appVersion, 10);
     }
 

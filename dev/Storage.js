@@ -13,12 +13,12 @@
 
 var Storage = {};
 
-if (typeof AudioContext !== 'undefined') {
+if (typeof AudioContext !== "undefined") {
     Storage.AudioContext = AudioContext;
-} else if (typeof webkitAudioContext !== 'undefined') {
+} else if (typeof webkitAudioContext !== "undefined") {
     Storage.AudioContext = webkitAudioContext;
 }
 
-if (typeof RecordRTC !== 'undefined') {
+if (typeof RecordRTC !== "undefined") {
     RecordRTC.Storage = Storage;
 }

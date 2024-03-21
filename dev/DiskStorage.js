@@ -27,7 +27,6 @@
  * @see {@link https://github.com/muaz-khan/RecordRTC|RecordRTC Source Code}
  */
 
-
 var DiskStorage = {
     /**
      * This method must be called once to initialize IndexedDB ObjectStore. Though, it is auto-used internally.
@@ -40,13 +39,16 @@ var DiskStorage = {
     init: function() {
         var self = this;
 
-        if (typeof indexedDB === 'undefined' || typeof indexedDB.open === 'undefined') {
-            console.error('IndexedDB API are not available in this browser.');
+        if (
+            typeof indexedDB === "undefined" ||
+            typeof indexedDB.open === "undefined"
+        ) {
+            console.error("IndexedDB API are not available in this browser.");
             return;
         }
 
         var dbVersion = 1;
-        var dbName = this.dbName || location.href.replace(/\/|:|#|%|\.|\[|\]/g, ''),
+        var dbName = this.dbName || location.href.replace(/\/|:|#|%|\.|\[|\]/g, ""),
             db;
         var request = indexedDB.open(dbName, dbVersion);
 
@@ -55,31 +57,38 @@ var DiskStorage = {
         }
 
         function putInDB() {
-            var transaction = db.transaction([self.dataStoreName], 'readwrite');
+            var transaction = db.transaction([self.dataStoreName], "readwrite");
 
             if (self.videoBlob) {
-                transaction.objectStore(self.dataStoreName).put(self.videoBlob, 'videoBlob');
+                transaction
+                    .objectStore(self.dataStoreName)
+                    .put(self.videoBlob, "videoBlob");
             }
 
             if (self.gifBlob) {
-                transaction.objectStore(self.dataStoreName).put(self.gifBlob, 'gifBlob');
+                transaction
+                    .objectStore(self.dataStoreName)
+                    .put(self.gifBlob, "gifBlob");
             }
 
             if (self.audioBlob) {
-                transaction.objectStore(self.dataStoreName).put(self.audioBlob, 'audioBlob');
+                transaction
+                    .objectStore(self.dataStoreName)
+                    .put(self.audioBlob, "audioBlob");
             }
 
             function getFromStore(portionName) {
-                transaction.objectStore(self.dataStoreName).get(portionName).onsuccess = function(event) {
-                    if (self.callback) {
-                        self.callback(event.target.result, portionName);
-                    }
-                };
+                transaction.objectStore(self.dataStoreName).get(portionName).onsuccess =
+                    function(event) {
+                        if (self.callback) {
+                            self.callback(event.target.result, portionName);
+                        }
+                    };
             }
 
-            getFromStore('audioBlob');
-            getFromStore('videoBlob');
-            getFromStore('gifBlob');
+            getFromStore("audioBlob");
+            getFromStore("videoBlob");
+            getFromStore("gifBlob");
         }
 
         request.onerror = self.onError;
@@ -156,7 +165,7 @@ var DiskStorage = {
      * };
      */
     onError: function(error) {
-        console.error(JSON.stringify(error, null, '\t'));
+        console.error(JSON.stringify(error, null, "\t"));
     },
 
     /**
@@ -166,10 +175,10 @@ var DiskStorage = {
      * @example
      * DiskStorage.dataStoreName = 'recordRTC';
      */
-    dataStoreName: 'recordRTC',
-    dbName: null
+    dataStoreName: "recordRTC",
+    dbName: null,
 };
 
-if (typeof RecordRTC !== 'undefined') {
+if (typeof RecordRTC !== "undefined") {
     RecordRTC.DiskStorage = DiskStorage;
 }

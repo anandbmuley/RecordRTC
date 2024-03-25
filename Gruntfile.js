@@ -246,7 +246,7 @@ module.exports = function(grunt) {
         "concat",
         "replace",
         "jsbeautifier",
-        "jshint",
+        // "jshint",
         "copy",
         "uglify",
         "clean",

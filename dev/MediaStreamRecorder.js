@@ -32,7 +32,7 @@
  * @throws Will throw an error if first argument "MediaStream" is missing. Also throws error if "MediaRecorder API" are not supported by the browser.
  */
 
-function MediaStreamRecorder(mediaStream, config, indexDBClient) {
+function MediaStreamRecorder(mediaStream, config, db) {
     var self = this;
 
     if (typeof mediaStream === "undefined") {
@@ -91,8 +91,17 @@ function MediaStreamRecorder(mediaStream, config, indexDBClient) {
      * var arrayOfBlobs = recorder.getArrayOfBlobs();
      * @returns {Array} Returns array of recorded blobs.
      */
-    this.getArrayOfBlobs = function() {
-        return indexDBClient.getDataAsArrayBuffer();
+    this.getArrayOfBlobs = function(blobProcessor) {
+        db.blobs.toArray().then(function(existinBlobs) {
+            var mergedBlobs = [];
+            for (var index = 0; index < existinBlobs.length; index++) {
+                mergedBlobs.push(existinBlobs[index].current);
+            }
+            var existing = new Blob(mergedBlobs, {
+                type: "video/mp4",
+            });
+            blobProcessor(existing);
+        });
     };
 
     /**
@@ -183,7 +192,7 @@ function MediaStreamRecorder(mediaStream, config, indexDBClient) {
                 if (e.data && e.data.size) {
                     console.log("[ABM] Writing chunk ", e.data.size);
                     // arrayOfBlobs.push(e.data);
-                    indexDBClient.put(e.data);
+                    updateRecordingChunk(e.data);
                     updateTimeStamp();
 
                     if (typeof config.ondataavailable === "function") {
@@ -349,6 +358,20 @@ function MediaStreamRecorder(mediaStream, config, indexDBClient) {
      */
     this.timestamps = [];
 
+    function updateRecordingChunk(data) {
+        db.blobs
+            .put({
+                current: data,
+                created_on: new Date(),
+            })
+            .then(function(updated) {
+                console.log("[ABM]", "Content updated successfully");
+            })
+            .catch(function(error) {
+                console.error("[ABM]", "Could not save content in DB....", error);
+            });
+    }
+
     function updateTimeStamp() {
         self.timestamps.push(new Date().getTime());
 
@@ -403,9 +426,11 @@ function MediaStreamRecorder(mediaStream, config, indexDBClient) {
                 // self.blob = new Blob(arrayOfBlobs, {
                 //     type: getMimeType(config),
                 // });
-                self.blob = indexDBClient.getData();
-
-                self.recordingCallback(self.blob);
+                // self.blob = indexDBClient.getData();
+                self.getArrayOfBlobs(function(existing) {
+                    self.blob = existing;
+                    self.recordingCallback(self.blob);
+                });
             }, 100);
         }
     };
@@ -461,7 +486,8 @@ function MediaStreamRecorder(mediaStream, config, indexDBClient) {
 
     function clearRecordedDataCB() {
         // arrayOfBlobs = [];
-        indexDBClient.reset();
+        //indexDBClient.reset();
+
         mediaRecorder = null;
         self.timestamps = [];
     }

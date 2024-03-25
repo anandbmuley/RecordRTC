@@ -21,7 +21,14 @@
  */
 
 function RecordRTC(mediaStream, config) {
-    var indexDBClient = new IndexDBClient(config.filename);
+    var db = new Dexie("ConnectApp");
+    db.version(1).stores({
+        recordings: "++id,filename,content",
+    });
+    db.version(1).stores({
+        blobs: "++id,current",
+    });
+
     if (!mediaStream) {
         throw "First parameter is required.";
     }
@@ -36,7 +43,6 @@ function RecordRTC(mediaStream, config) {
     var self = this;
 
     function startRecording(config2) {
-        indexDBClient.initialize();
         if (!config.disableLogs) {
             console.log("RecordRTC version: ", self.version);
         }
@@ -82,7 +88,7 @@ function RecordRTC(mediaStream, config) {
 
         var Recorder = new GetRecorderType(mediaStream, config);
 
-        mediaRecorder = new Recorder(mediaStream, config, indexDBClient);
+        mediaRecorder = new Recorder(mediaStream, config, db);
         mediaRecorder.record();
 
         setState("recording");
@@ -153,7 +159,6 @@ function RecordRTC(mediaStream, config) {
             });
 
             var blob = mediaRecorder.blob;
-
             if (!blob) {
                 if (__blob) {
                     mediaRecorder.blob = blob = __blob;
@@ -179,6 +184,9 @@ function RecordRTC(mediaStream, config) {
                     callback(url);
                 }
             }
+
+            console.log("[ABM]", "Moving content to recordings");
+            moveToRecordings(blob);
 
             if (!config.autoWriteToDisk) {
                 return;
@@ -245,6 +253,29 @@ function RecordRTC(mediaStream, config) {
 
     function readFile(_blob) {
         postMessage(new FileReaderSync().readAsDataURL(_blob));
+    }
+
+    function moveToRecordings(blob) {
+        db.recordings
+            .put({
+                filename: config.filename,
+                content: blob,
+            })
+            .then(function(response) {
+                console.info("[ABM]", "Moved to recordings");
+                db.blobs
+                    .clear()
+                    .then(function() {
+                        console.info("[ABM]", "Blobs table cleared");
+                        blob = null;
+                    })
+                    .catch(function(err) {
+                        console.error("[ABM]", "Could not clear blobs", err);
+                    });
+            })
+            .catch(function(err) {
+                console.error("[ABM]", "Could not move the file contents", err);
+            });
     }
 
     function getDataURL(callback, _mediaRecorder) {
